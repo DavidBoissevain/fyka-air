@@ -18,6 +18,22 @@ You can test the API client without Supabase:
 npm run check:luchtmeetnet
 ```
 
+## Collector: `collect-samenmeten`
+
+Citizen sensors from RIVM Samen Meten. `pg_cron` calls it three times an hour with a JSON body:
+
+| When | Body | What it does |
+|---|---|---|
+| :40 | `{"mode": "sweep", "hoursAgo": 0}` | Fetches the hour labelled with the current hour, upserts it, and computes citizen-sensor LKI for that hour |
+| :55 | `{"mode": "sweep", "hoursAgo": 1}` | Re-sweeps the previous hour for late data |
+| :05 | `{"mode": "things"}` | When sensors lack details (location, network) or they're older than 7 days, reads the full sensor inventory and updates them |
+
+To backfill a specific hour, send `{"mode": "sweep", "hour": "2026-10-05T18:00:00Z"}`. Test the API client without Supabase with `npm run check:samenmeten`.
+
+## Nightly maintenance
+
+`pg_cron` runs `select public.maintain_measurements();` at 02:30 UTC. It rolls up daily averages for the last two days into `measurements_daily`, deletes raw hourly data older than 30 days, and deletes citizen-sensor LKI rows older than 2 days.
+
 ## Setting up an environment
 
 1. Apply the migrations:
@@ -27,10 +43,11 @@ npm run check:luchtmeetnet
    npx supabase db reset   # local stack (after `npx supabase start`, needs Docker)
    ```
 
-2. Deploy the function (hosted only; the local stack serves it automatically):
+2. Deploy the functions (hosted only; the local stack serves them automatically):
 
    ```sh
    npx supabase functions deploy collect-luchtmeetnet
+   npx supabase functions deploy collect-samenmeten
    ```
 
 3. Store the two secrets the cron job reads. Run this in the SQL editor:

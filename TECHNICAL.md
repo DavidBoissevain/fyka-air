@@ -199,6 +199,7 @@ With Supabase's 500 MB free tier, store only the needed quantities and keep **30
 | 19 | 2026-10-05 | Store only calibrated PM values from Samen Meten, not raw values | Decided | Keeps storage within the free tier (#9). This narrows #3: raw values can be linked from the sensor detail panel instead. |
 | 20 | 2026-10-05 | The app reads the `station_readings_now` view through Supabase's REST API with a plain server-side `fetch`, cached for 5 minutes with `use cache` | Decided | New data arrives hourly, so a 5-minute cache shows it soon after without hitting the database on every visit. A plain `fetch` with the publishable (read-only) key avoids depending on `supabase-js` (#4). |
 | 21 | 2026-10-05 | Color map dots by the official LKI that Luchtmeetnet publishes. In the station panel, compare each pollutant with its WHO guideline instead of coloring it by an LKI sub-index. | Decided | The per-pollutant LKI bands in the house style are example values. We don't color by a band we can't verify (see "Honest" in VISION.md). |
+| 22 | 2026-10-05 | Compute the LKI for citizen sensors from the 24-hour average of their calibrated PM2.5 and PM10, using RIVM's class edges, and say in the panel that it's a fine-dust index | Decided | **RIVM's bands:** report 2014-0050, table 7, with PM as a 24-hour average and NO2/O3 hourly; the LKI is the highest sub-index. These reproduced Luchtmeetnet's published LKI at 44 of 44 stations that measure every component (2026-10-05). Stations without an ozone sensor still get ozone in their official LKI, so RIVM evidently fills in an estimated value. **Our extension:** the split between classes 10 and 11 is our own, because the report has one open top class. **Why PM only:** sensors don't measure ozone or NO2, so their index can be lower than nearby official stations whenever ozone is the deciding pollutant. A sensor needs at least 12 hourly values in the last 24 hours to get an index. |
 
 ## Database schema
 
@@ -217,7 +218,13 @@ See [supabase/migrations/](supabase/migrations/) for the schema and [supabase/RE
   - `measured_at` is the newest of those readings.
   - This is what the map loads.
 - **Access:** the tables and the view are publicly readable (RLS select policy for `anon` and `authenticated`). Only `service_role` can write, through `ingest_measurements(source, rows jsonb)`, which also creates stub stations for numbers it hasn't seen yet.
-- **Not built yet:** daily aggregates and the 30-day retention job (#9), and the Samen Meten collector.
+- **`measurements_daily`:** mean, min, max and number of hours per station, quantity and day (Europe/Amsterdam; the hour ending at 00:00 belongs to the previous day). Publicly readable.
+- **Functions** (service role and cron only):
+  - `lki_sub_index(quantity, value)`: RIVM class edges (#22).
+  - `compute_citizen_lki(hour)`: writes `lki` rows for Samen Meten sensors.
+  - `update_station_details(source, rows)` and `stale_station_ids(source, max_age_days)`: sensor details.
+  - `rollup_daily(from, to)`: fills `measurements_daily`.
+  - `maintain_measurements(keep_days = 30)`: nightly at 02:30 UTC. Rolls up the last two days, deletes raw data older than the retention window, and deletes citizen LKI rows older than 2 days.
 
 ## Frontend
 
@@ -226,9 +233,10 @@ The visual reference is [docs/design/huisstijl.html](docs/design/huisstijl.html)
 - **Page:** [app/page.tsx](app/page.tsx) has a header (Fyka mark, light/dark toggle) and the map with a side panel ([components/air/](components/air/)). On mobile, the panel sits below the map.
 - **Data:** `getStationReadings()` in [lib/air-data.ts](lib/air-data.ts) (#20).
 - **Map:**
-  - Stations are drawn as LKI-colored circles with a halo by [station-layer.tsx](components/air/station-layer.tsx), a MapLibre layer on top of mapcn's `useMap()`. Stations without an index are drawn in steel blue.
+  - [station-layer.tsx](components/air/station-layer.tsx) draws a MapLibre layer on top of mapcn's `useMap()`. Official stations are large LKI-colored circles with a halo. Citizen sensors are small dots without one, drawn underneath. Higher LKI values are drawn on top, and anything without an index is steel blue.
+  - About 2,200 stations and sensors are loaded at once. `getStationReadings()` pages through the view, because the Data API returns at most 1,000 rows per request.
   - [lib/map-style.ts](lib/map-style.ts) loads the OpenFreeMap styles on the server, cached for a day. It recolors background, land use, parks, buildings and water per theme, and replaces English label names (`name_en`) with `name:nl`, falling back to `name`. Client components must not import it, because it contains a `"use cache"` function.
-- **Panel:** with no station selected, it shows an overview (stations per LKI category, the latest measurement time). Clicking a station shows its LKI, advice, pollutant values against WHO guidelines, and a chart.
+- **Panel:** with no station selected, it shows an overview (stations per LKI category, the latest measurement time). Clicking a station shows its LKI, advice, pollutant values against WHO guidelines, and a chart. A citizen sensor shows "Burgersensor" and "Gekalibreerd door het RIVM" badges, its network and code, and only what it measures, with a note that its index is based on fine dust only (#22).
 - **Chart** ([station-chart.tsx](components/air/station-chart.tsx)):
   - Tabs for the pollutant (only those the station measures) and the period: 24 hours (hourly line) or 7 days (daily-mean bars).
   - The WHO guideline is a dashed reference line. Missing hours show as gaps, and the tooltip shows how many hours went into each daily mean.
@@ -252,7 +260,10 @@ Set these in `.env.local` locally and in Vercel's project settings. [.env.exampl
 
 ### Open points
 
-- **Freshness dot:** Luchtmeetnet publishes about 10 minutes after the hour and the collector runs at :15. The newest reading is therefore often 60–75 minutes old, so the house style's "amber after 1 hour" rule triggers often. Consider 90 minutes.
+- **Freshness dot:** the newest reading is often older than an hour, so the house style's "amber after 1 hour" rule triggers often. Consider 90 minutes.
+  - Luchtmeetnet publishes about 10 minutes after the hour and its collector runs at :15, so readings are 60–75 minutes old at worst.
+  - Samen Meten publishes about 30 minutes after the hour and its collector runs at :40, so readings are 40–100 minutes old.
+- **Payload:** the page sends about 2,200 stations with their readings to the browser. If it gets slow, send a slim list for the map and load details on click.
 - **MapLibre worker:** mapcn loads MapLibre's web worker from unpkg. Self-host it from `public/` once we move toward EU infrastructure.
 
 ## Collector design
@@ -262,11 +273,15 @@ Set these in `.env.local` locally and in Vercel's project settings. [.env.exampl
   - Every hour at :15, fetch `/measurements` and `/lki` for the **last 3 hours**, so missed runs catch up. That's about 1,500 rows in about 3 requests.
   - Refresh details for up to 20 stations per run, oldest first and 1 s apart. That's about 23 requests per run, well under the limit, and every station gets refreshed daily.
   - Tolerate connection resets by retrying with backoff.
-- **Samen Meten**
-  - Every hour, at about :45, sweep the hour labelled with the current hour, which should be complete by then. Also re-sweep the previous hour to fill any gaps.
+- **Samen Meten** (built: [supabase/functions/collect-samenmeten](supabase/functions/collect-samenmeten/), testable with `npm run check:samenmeten`)
+  - **:40:** sweep the hour labelled with the current hour, which is published by about :30.
+  - **:55:** re-sweep the previous hour to pick up late data.
+  - **:05:** "things" mode. When any sensor's details are missing or more than 7 days old, fetch the full Thing inventory (about 8 s, 300 ms of CPU) and update every known sensor in one call.
+  - **Each sweep:** about 70 s and 300 ms of CPU, within the Edge Function's 150 s / 2 s limits. Writes about 3,400 rows, then runs `compute_citizen_lki` for that hour.
   - Never sweep an hour that's still being filled.
   - Retry a 504 once; a second 504 means the end of the data.
-  - Refresh the Thing inventory (names, properties, locations) daily: about 8 s.
+  - Calibrated PM (`pm25_kal`, `pm10_kal`), `no2` and `nh3` are stored; negative values are dropped.
+  - The function also accepts `{"mode": "sweep", "hour": "<ISO>"}` for backfills.
 - **General**
   - Run requests one after another, never in parallel.
   - Store timestamps in UTC as the **end** of the measured hour, and convert to `Europe/Amsterdam` only for display.
