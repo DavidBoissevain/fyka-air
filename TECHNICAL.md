@@ -263,6 +263,10 @@ Set these in `.env.local` locally and in Vercel's project settings. [.env.exampl
 - **Freshness dot:** the newest reading is often older than an hour, so the house style's "amber after 1 hour" rule triggers often. Consider 90 minutes.
   - Luchtmeetnet publishes about 10 minutes after the hour and its collector runs at :15, so readings are 60–75 minutes old at worst.
   - Samen Meten publishes about 30 minutes after the hour and its collector runs at :40, so readings are 40–100 minutes old.
+- **Samen Meten calibration delay:** at 19:38 UTC the 19:00 hour already had 7,200 observations (raw and meteo) but no calibrated PM. RIVM publishes calibrated values later than raw ones.
+  - The effect: the :40 run usually stores nothing, and the :55 re-sweep of the previous hour does the work. Sensor data then lags about 2 hours, close to the 3-hour cut-off on the map (#15), so one failed run makes sensors disappear.
+  - To do: measure when `*_kal` values appear and shift the schedule, for example sweep 1 and 2 hours ago instead of 0 and 1.
+- **Supabase free-tier pausing:** free projects are paused after a period of inactivity. Check whether the collectors' own requests count as activity; if the project gets paused, collection stops.
 - **Payload:** the page sends about 2,200 stations with their readings to the browser. If it gets slow, send a slim list for the map and load details on click.
 - **MapLibre worker:** mapcn loads MapLibre's web worker from unpkg. Self-host it from `public/` once we move toward EU infrastructure.
 
