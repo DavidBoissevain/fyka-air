@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Enables `use cache` + cacheLife for the hourly air quality data.
+  cacheComponents: true,
 };
 
 export default nextConfig;

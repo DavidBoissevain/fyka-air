@@ -6,8 +6,13 @@
 
 @theme inline {
   --color-background: var(--background);
+  --color-brand-text: var(--brand-text);
+  --color-brand-soft: var(--brand-soft);
+  --color-steel: var(--steel);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
+  --font-sans: var(--font-figtree);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -48,73 +53,85 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* Fyka base tokens and Fyka Air's sky accent: docs/design/huisstijl.html. */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  --background: #EEF1F5;
+  --foreground: #1A1D24;
+  --card: #F8FAFC;
+  --card-foreground: #1A1D24;
+  --popover: #F8FAFC;
+  --popover-foreground: #1A1D24;
+  --primary: #0284C7;
+  --primary-foreground: #FFFFFF;
+  --secondary: #E8EBF0;
+  --secondary-foreground: #1A1D24;
+  --muted: #E8EBF0;
+  --muted-foreground: #5A6070;
+  --accent: #E8EBF0;
+  --accent-foreground: #1A1D24;
+  --destructive: #DC2626;
+  --border: #DCE1E8;
+  --input: #DCE1E8;
+  --ring: #0369A1;
+  --brand-text: #0369A1;
+  --brand-soft: #E0F2FE;
+  --steel: #7B93B5;
+  --ok: #059669;
+  --warn: #B45309;
+  --chart-1: #5B7BAA;
+  --chart-2: #7B93B5;
+  --chart-3: #9BB0C8;
+  --chart-4: #3C5070;
+  --chart-5: #C3CFDF;
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar: #F8FAFC;
+  --sidebar-foreground: #1A1D24;
+  --sidebar-primary: #0284C7;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #E8EBF0;
+  --sidebar-accent-foreground: #1A1D24;
+  --sidebar-border: #DCE1E8;
+  --sidebar-ring: #0369A1;
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: #0F172A;
+  --foreground: #F1F5F9;
+  --card: #1E293B;
+  --card-foreground: #F1F5F9;
+  --popover: #1E293B;
+  --popover-foreground: #F1F5F9;
+  --primary: #0284C7;
+  --primary-foreground: #FFFFFF;
+  --secondary: #334155;
+  --secondary-foreground: #F1F5F9;
+  --muted: #334155;
+  --muted-foreground: #94A3B8;
+  --accent: #334155;
+  --accent-foreground: #F1F5F9;
+  --destructive: #F87171;
+  --border: #334155;
+  --input: #334155;
+  --ring: #38BDF8;
+  --brand-text: #38BDF8;
+  --brand-soft: #0C2D48;
+  --steel: #7B93B5;
+  --ok: #10B981;
+  --warn: #FBBF24;
+  --chart-1: #7B93B5;
+  --chart-2: #9BB0C8;
+  --chart-3: #5B7BAA;
+  --chart-4: #C3CFDF;
+  --chart-5: #496289;
+  --sidebar: #1E293B;
+  --sidebar-foreground: #F1F5F9;
+  --sidebar-primary: #0284C7;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #334155;
+  --sidebar-accent-foreground: #F1F5F9;
+  --sidebar-border: #334155;
+  --sidebar-ring: #38BDF8;
+  color-scheme: dark;
 }
 
 @layer base {
@@ -126,5 +143,30 @@
   }
   html {
     @apply font-sans;
+  }
+  /* Tailwind v4 dropped the pointer cursor on buttons; bring it back for every clickable control. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [role="tab"]:not([aria-disabled="true"]),
+  [role="option"] {
+    cursor: pointer;
+  }
+  .maplibregl-popup-content {
+    @apply bg-transparent! shadow-none! p-0! rounded-none!;
+  }
+  .maplibregl-popup-tip {
+    @apply hidden!;
+  }
+  .maplibregl-ctrl-attrib {
+    @apply bg-background! text-muted-foreground! border-border! rounded-md! border! shadow-sm!;
+  }
+  .maplibregl-ctrl-attrib a {
+    @apply text-muted-foreground!;
+  }
+  .maplibregl-ctrl-attrib a:hover {
+    @apply text-foreground!;
+  }
+  .maplibregl-ctrl-attrib-button {
+    @apply bg-transparent! dark:invert;
   }
 }

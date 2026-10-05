@@ -5,9 +5,11 @@
  * professional stations from citizen sensors, how long a sweep of one
  * hour of observations takes, and how much data we'd store.
  *
- * Run: npm run probe
+ * Run: npm run probe:samenmeten
  * Requests are sequential on purpose; be polite to RIVM's infrastructure.
  */
+
+export {};
 
 const BASE = "https://api-samenmeten.rivm.nl/v1.0";
 const PAGE_SIZE = 200; // server caps $top at 200
@@ -41,20 +43,23 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function getJson<T>(url: string, label: string): Promise<T> {
+// The server answers 504 after ~30s instead of an empty page when a filter
+// matches no rows (an hour not yet published, or $skip past the end), but it
+// also throws transient 504s. With `emptyOn504`, a 504 is retried once and a
+// second 504 returns null, meaning "no more data".
+async function getJson<T>(url: string, label: string, emptyOn504 = false): Promise<T | null> {
   const s = (stats[label] ??= { requests: 0, ms: 0, maxMs: 0, retries: 0 });
   for (let attempt = 1; ; attempt++) {
     const start = performance.now();
     let problem: string;
     try {
       const res = await fetch(url, { signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
-      if (res.ok) {
-        const body = (await res.json()) as T;
-        const ms = performance.now() - start;
+      const ms = performance.now() - start;
+      if (res.ok || (emptyOn504 && res.status === 504 && attempt >= 2)) {
         s.requests++;
         s.ms += ms;
         s.maxMs = Math.max(s.maxMs, ms);
-        return body;
+        return res.ok ? ((await res.json()) as T) : null;
       }
       problem = `HTTP ${res.status}`;
     } catch (error) {
@@ -68,17 +73,27 @@ async function getJson<T>(url: string, label: string): Promise<T> {
 }
 
 // The server's @iot.nextLink drops $select, so page with $skip ourselves.
-async function getAll<T>(path: string, params: Record<string, string>, label: string): Promise<T[]> {
-  const all: T[] = [];
+async function getAll<T>(
+  path: string,
+  params: Record<string, string>,
+  label: string,
+  emptyOn504 = false,
+): Promise<{ items: T[]; timedOut: boolean }> {
+  const items: T[] = [];
+  let timedOut = false;
   for (let skip = 0; ; skip += PAGE_SIZE) {
     const query = new URLSearchParams({ ...params, $top: String(PAGE_SIZE), $skip: String(skip) });
-    const page = await getJson<Page<T>>(`${BASE}${path}?${query}`, label);
-    all.push(...page.value);
-    process.stdout.write(`\r  ${label}: ${all.length}`);
+    const page = await getJson<Page<T>>(`${BASE}${path}?${query}`, label, emptyOn504);
+    if (!page) {
+      timedOut = true;
+      break;
+    }
+    items.push(...page.value);
+    process.stdout.write(`\r  ${label}: ${items.length}`);
     if (page.value.length < PAGE_SIZE) break;
   }
   process.stdout.write("\n");
-  return all;
+  return { items, timedOut };
 }
 
 // "LTD_94370" -> "LTD", "NL10444" -> "NL"
@@ -119,7 +134,7 @@ async function main() {
   // 1. Inventory of all sensors (Things) with their location.
   console.log("1. Sensor inventory");
   const inventoryStart = performance.now();
-  const things = await getAll<Thing>(
+  const { items: things } = await getAll<Thing>(
     "/Things",
     { $select: "id,name,properties", $expand: "Locations($select=location)", $orderby: "id" },
     "things",
@@ -136,11 +151,11 @@ async function main() {
 
   // 2. One sweep per recent hour, filtering observations by exact phenomenonTime.
   console.log(`2. Observation sweeps (last ${HOURS_TO_SWEEP} hours, UTC)`);
-  const sweeps: { hour: Date; observations: Observation[]; ms: number; duplicates: number }[] = [];
+  const sweeps: { hour: Date; observations: Observation[]; ms: number; duplicates: number; timedOut: boolean }[] = [];
   for (let hoursAgo = 0; hoursAgo < HOURS_TO_SWEEP; hoursAgo++) {
     const hour = hourStart(hoursAgo);
     const start = performance.now();
-    const raw = await getAll<Observation>(
+    const { items: raw, timedOut } = await getAll<Observation>(
       "/Observations",
       {
         $select: "phenomenonTime,result",
@@ -148,16 +163,18 @@ async function main() {
         $expand: "Datastream($select=id,name)",
       },
       `obs ${hour.toISOString().slice(0, 13)}h`,
+      true,
     );
     const ms = performance.now() - start;
     // Paging without $orderby can repeat rows; keep one per datastream.
     const unique = [...new Map(raw.map((o) => [o.Datastream["@iot.id"], o])).values()];
-    sweeps.push({ hour, observations: unique, ms, duplicates: raw.length - unique.length });
+    sweeps.push({ hour, observations: unique, ms, duplicates: raw.length - unique.length, timedOut });
   }
   console.table(
     sweeps.map((s) => ({
       hour: s.hour.toISOString().slice(0, 16),
       observations: s.observations.length,
+      endedWith504: s.timedOut,
       duplicatesDropped: s.duplicates,
       sensors: new Set(s.observations.map((o) => parseDatastreamName(o.Datastream.name).thing)).size,
       sweepTime: seconds(s.ms),

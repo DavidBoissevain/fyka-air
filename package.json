@@ -2,12 +2,16 @@
   "name": "fyka-air",
   "version": "0.1.0",
   "private": true,
+  "license": "EUPL-1.2",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "probe": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/probe-samenmeten.ts"
+    "probe:samenmeten": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/probe-samenmeten.mts",
+    "probe:luchtmeetnet": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/probe-luchtmeetnet.mts",
+    "check:luchtmeetnet": "node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-luchtmeetnet-client.mts",
+    "check:samenmeten": "node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-samenmeten-client.mts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
@@ -19,6 +23,7 @@
     "embla-carousel-react": "^8.6.0",
     "input-otp": "^1.5.0",
     "lucide-react": "^1.52.0",
+    "maplibre-gl": "^6.12.0",
     "next": "16.3.8",
     "next-themes": "^0.4.6",
     "react": "19.2.8",
@@ -32,11 +37,13 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/geojson": "^7946.0.16",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.8",
+    "supabase": "2.119.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
