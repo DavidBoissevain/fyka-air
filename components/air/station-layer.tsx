@@ -5,7 +5,7 @@ import type * as GeoJSON from "geojson";
 import type * as MapLibreGL from "maplibre-gl";
 
 import { useMap } from "@/components/ui/map";
-import { NO_INDEX_COLOR, lkiColor, lkiIndex, type StationReading } from "@/lib/air-quality";
+import { LKI_OUTLINE, NO_INDEX_COLOR, lkiColor, lkiIndex, type StationReading } from "@/lib/air-quality";
 
 const SOURCE = "stations";
 const LAYER = "stations";
@@ -13,10 +13,10 @@ const SENSOR_LAYER = "sensors";
 const SELECTED_LAYER = "stations-selected";
 const CLICKABLE = [LAYER, SENSOR_LAYER];
 
-// Halo behind official stations, and the ring around the selected one.
+// Thin grey outline around every dot, and the ring around the selected station.
 const THEME = {
-  light: { halo: "#FFFFFF", ring: "#1A1D24" },
-  dark: { halo: "#0F172A", ring: "#F1F5F9" },
+  light: { outline: LKI_OUTLINE.light, ring: "#1A1D24" },
+  dark: { outline: LKI_OUTLINE.dark, ring: "#F1F5F9" },
 } as const;
 
 type Props = {
@@ -25,8 +25,8 @@ type Props = {
   onSelect: (id: number | null) => void;
 };
 
-// Official stations as large LKI-coloured dots with a halo, citizen sensors as
-// small dots without one, underneath (huisstijl: "Map"). Higher LKI values are
+// Official stations as large LKI-coloured dots, citizen sensors as small dots
+// underneath, both with a thin grey outline. Higher LKI values are
 // drawn on top, so problem spots stay visible in dense areas.
 export function StationLayer({ stations, selectedId, onSelect }: Props) {
   const { map, isLoaded, resolvedTheme } = useMap();
@@ -69,8 +69,8 @@ export function StationLayer({ stations, selectedId, onSelect }: Props) {
         "circle-radius": ["interpolate", ["linear"], ["zoom"], 6, 2.8, 11, 6],
         "circle-color": ["get", "color"],
         "circle-opacity": 0.9,
-        "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 6, 0, 10, 1],
-        "circle-stroke-color": colors.halo,
+        "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 6, 0.6, 11, 1],
+        "circle-stroke-color": colors.outline,
       },
     });
     map.addLayer({
@@ -82,8 +82,8 @@ export function StationLayer({ stations, selectedId, onSelect }: Props) {
       paint: {
         "circle-radius": ["interpolate", ["linear"], ["zoom"], 6, 6, 11, 11],
         "circle-color": ["get", "color"],
-        "circle-stroke-width": 2.5,
-        "circle-stroke-color": colors.halo,
+        "circle-stroke-width": 1.25,
+        "circle-stroke-color": colors.outline,
       },
     });
     map.addLayer({

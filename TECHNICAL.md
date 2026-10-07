@@ -139,6 +139,7 @@ Findings verified on 2026-10-05.
 
 - **No empty pages.** A filter that matches no rows, such as an unpublished hour or `$skip` past the end, returns **504 after about 30 s**.
 - **Transient 504s.** These also happen on valid pages; one offset failed once and then worked. So: retry a 504 once, and treat a second 504 as the end of the data.
+- **Calibrated values arrive about an hour after raw ones** (checked 2026-10-07). At 18:34 UTC, a sensor had raw `pm25` for 18:00 but `pm25_kal` only up to 17:00. A :40 sweep of the current hour found about 6,000 raw observations but stored 0 rows, and calibrated data for hour H only landed with the :55 re-sweep at H+1:55: always 2–3 hours old, a few minutes from the 3-hour cut-off. Fixed by #24 (sweep the previous hour) and #25 (citizen freshness windows shifted by 2 hours).
 - **`$top` is capped at 200.**
 - **`@iot.nextLink` drops `$select`,** so build `$skip` URLs yourself.
 - **What times out with a 504:**
@@ -156,6 +157,26 @@ Findings verified on 2026-10-05.
 
 - [rivm-syso/Samen-analyseren-tool](https://github.com/rivm-syso/Samen-analyseren-tool): RIVM's analysis and visualization tool.
 - [rivm-syso/samanapir](https://github.com/rivm-syso/samanapir): an R package for the API, with query patterns and calibration logic.
+
+### RIVM model maps (candidate for a surface layer)
+
+Researched 2026-10-07 for a continuous air quality layer; not built yet.
+
+- **RIVM `lucht` WMS** at `https://data.rivm.nl/geo/lucht/wms`: the source of Luchtmeetnet's colored map.
+  - **Layers:** `actueel_{lki,no2,o3,pm10,pm25}` for now, plus `vandaag_`, `morgen_` and `overmorgen_{comp}_{HH}` forecasts every 3 hours. There is no time dimension and no timestamp.
+  - **Which hour "actueel" shows** (tested 2026-10-07 19:03 UTC): the newest hour Luchtmeetnet has published, here the hour ending 18:00. Ozone is the clearest test because it changes fastest: the map's mean difference from 35 stations was 5 µg/m³ for that hour, against 10 and 16 for the two hours before. RIVM's own style labels the map "kaart ververst elk uur". When in the hour it updates is not yet measured; our label could say "Berekend voor het laatste uur".
+  - **How it's made:** on a 125 m grid, from this hour's measurements at official background stations. Measurements at traffic stations aren't used in the base map, and neither are Samen Meten sensors. Sources: RIVM's 2015 smog advice, appendix 3, and a 2023 RIVM slide ("Past hour: Belgian RIO model for background maps + local traffic").
+    - **Background:** the Belgian RIO method. It removes each station's local character using land use, then interpolates between the stations (kriging).
+    - **Roads:** motorway contributions to NO₂ and fine dust are modelled with current KNMI weather and scaled to measurements at street stations.
+    - **LKI:** computed per grid cell from the component maps. The decimal is a linear interpolation within the index band (O₃ 54.8 in band 40–60 gives 3.74), and Luchtmeetnet rounds decimal LKI values up.
+    - **Forecast layers:** pure model output, from CAMS since August 2023.
+    - **Limitations:** NO₂ along streets is underestimated, and incidents such as fires and wood burning don't show up. Luchtmeetnet's "mijn locatie" page mentions OPS plus TREDM instead, a conflict we haven't resolved.
+  - **Access:** a GetMap in EPSG:3857 works even though the capabilities only list RD and CRS:84, and responses carry CORS `*` with no key. So a MapLibre raster source with `{bbox-epsg-3857}` works. GetFeatureInfo returns values, and the LKI comes as a decimal (`3.74`). A WCS serves the same grids as GeoTIFF.
+  - **Terms:** credit "www.luchtmeetnet.nl", with no availability guarantee.
+  - **Styling:** RIVM's default LKI style uses Luchtmeetnet's colors in fine steps. The values are continuous, with Goed 0–3, Matig 3–6, Onvoldoende 6–8, Slecht 8–10 and Zeer slecht above 10, so the whole-number index is the value rounded up. **Our own colors work:** a GetMap with an `SLD_BODY` parameter returns the map in our 11 LKI colors (tested 2026-10-07). Use a `RasterSymbolizer` with `ColorMap type="intervals"` and entries at quantity 0 (transparent), 1, 2, … 10, then 999, which is about 1 KB of XML in the URL.
+- **Annual-only maps:** `data.rivm.nl/geo/gcn/wms` and Atlas Leefomgeving. Not suitable for an hourly layer.
+- **Samen Meten's "berekende kaart":** an hourly 270×320 PNG (about 1 km per pixel), with no CORS header and no documentation.
+- **Copernicus CAMS WMS:** about 10 km resolution, so too coarse. Fallback only.
 
 ### Fallback: Sensor.Community
 
@@ -192,14 +213,17 @@ With Supabase's 500 MB free tier, store only the needed quantities and keep **30
 | 12 | 2026-10-05 | Host the code on GitHub | Decided | — |
 | 13 | 2026-10-05 | Use Fyka Watch for analytics | Decided | — |
 | 14 | 2026-10-05 | Use PDOK Locatieserver for address and place search | Decided | It's a free Dutch government geocoder and fits the sovereignty principle. |
-| 15 | 2026-10-05 | Don't show sensors with no reading in the last 3 hours | Decided | Stale data is misleading on a map that's supposed to show current air quality. |
+| 15 | 2026-10-05 | Don't show sensors with no reading in the last 3 hours | Decided; for citizen sensors amended by #25 | Stale data is misleading on a map that's supposed to show current air quality. |
 | 16 | 2026-10-05 | Label every sensor as professional or citizen sensor. Professional means a Luchtmeetnet station; everything from Samen Meten counts as a citizen sensor, including the municipal and RIVM research networks. | Decided | Samen Meten contains no reference stations (see the probe). Municipal networks use the same low-cost sensors. |
 | 17 | 2026-10-05 | Use two data sources: Luchtmeetnet for professional stations and Samen Meten for citizen sensors. Sensor.Community is the fallback. | Decided | Luchtmeetnet is fast, official and covers NO2 (78 stations, compared with 14 sensors in Samen Meten). Samen Meten adds RIVM calibration and networks that aren't on Sensor.Community. |
 | 18 | 2026-10-05 | Keep the schema plain Postgres: store longitude and latitude as columns (no PostGIS), and write through a SQL function (`ingest_measurements`) rather than Supabase-specific features | Decided | Makes the later move off Supabase easier (#4). With about 2,300 points, the map loads all active stations anyway, so we don't need spatial queries. |
 | 19 | 2026-10-05 | Store only calibrated PM values from Samen Meten, not raw values | Decided | Keeps storage within the free tier (#9). This narrows #3: raw values can be linked from the sensor detail panel instead. |
 | 20 | 2026-10-05 | The app reads the `station_readings_now` view through Supabase's REST API with a plain server-side `fetch`, cached for 5 minutes with `use cache` | Decided | New data arrives hourly, so a 5-minute cache shows it soon after without hitting the database on every visit. A plain `fetch` with the publishable (read-only) key avoids depending on `supabase-js` (#4). |
 | 21 | 2026-10-05 | Color map dots by the official LKI that Luchtmeetnet publishes. In the station panel, compare each pollutant with its WHO guideline instead of coloring it by an LKI sub-index. | Decided | The per-pollutant LKI bands in the house style are example values. We don't color by a band we can't verify (see "Honest" in VISION.md). |
-| 22 | 2026-10-05 | Compute the LKI for citizen sensors from the 24-hour average of their calibrated PM2.5 and PM10, using RIVM's class edges, and say in the panel that it's a fine-dust index | Decided | **RIVM's bands:** report 2014-0050, table 7, with PM as a 24-hour average and NO2/O3 hourly; the LKI is the highest sub-index. These reproduced Luchtmeetnet's published LKI at 44 of 44 stations that measure every component (2026-10-05). Stations without an ozone sensor still get ozone in their official LKI, so RIVM evidently fills in an estimated value. **Our extension:** the split between classes 10 and 11 is our own, because the report has one open top class. **Why PM only:** sensors don't measure ozone or NO2, so their index can be lower than nearby official stations whenever ozone is the deciding pollutant. A sensor needs at least 12 hourly values in the last 24 hours to get an index. |
+| 22 | 2026-10-05 | Compute the LKI for citizen sensors from the 24-hour average of their calibrated PM2.5 and PM10, using RIVM's class edges, and say in the panel that it's a fine-dust index | Decided | **RIVM's bands:** report 2014-0050, table 7, with PM as a 24-hour average and NO2/O3 hourly; the LKI is the highest sub-index. These reproduced Luchtmeetnet's published LKI at 44 of 44 stations that measure every component (2026-10-05). Stations without an ozone sensor still get ozone in their official LKI, so RIVM evidently fills in an estimated value. **Classes 10 and 11:** the report has one open top class, but Luchtmeetnet's `/open_api/components/{formula}` limits split it the same way we do (PM2.5 100–140 / >140, PM10 and NO2 150–200 / >200, O3 200–240 / >240). Those limits confirm every band edge (checked 2026-10-06). **Why PM only:** sensors don't measure ozone or NO2, so their index can be lower than nearby official stations whenever ozone is the deciding pollutant. A sensor needs at least 12 hourly values in the last 24 hours to get an index. |
+| 23 | 2026-10-06 | Keep the house style's own 11 LKI colors (deep blue `#0A3FC2` through yellow and orange to purple `#7E2BB8`), close in look to RIVM Samen Meten's map. All dots get a thin grey outline (no white halo). Stations without an index use Luchtmeetnet's grey `#70757F`. | Decided | **Why:** we tried colors built from Luchtmeetnet's official legend and found the house style's scale looked better. **The trade-off:** the only official LKI legend is Luchtmeetnet's, with one color per category (Goed `#96C8FF`, Matig `#FFFFC8`, Onvoldoende `#FFC800`, Slecht `#FF4B00`, Zeer slecht `#A43AD9`, from the site's legend CSS). Our colors don't match it, so the category name next to each color (CLAUDE.md) is what links them to official sources. **Other sources:** the API's `/components/LKI` limits list colors per index, but they're inconsistent (index 4 is red, while 5–6 are pale yellow again). Samen Meten's 11-color ramp (`#0020C5` → `#DC0625`) is a generic concentration scale with its own thresholds per quantity, not the LKI. |
+| 24 | 2026-10-07 | Sweep the previous Samen Meten hour at :40 and again at :55 (cron jobs `collect-samenmeten-sweep` and `collect-samenmeten-resweep`), instead of the current hour at :40 and the previous hour at :55 | Decided | Calibrated values arrive about an hour after raw ones (see "Known limitations"), so the :40 sweep of the current hour stored nothing and data for hour H landed at H+1:55. Now it lands at H+1:40, and a failed :40 run is retried 15 minutes later instead of leaving the hour missing. The :55 run is the same sweep as before, so late values are still picked up as late as before. Migration `20261007183948_citizen_sensor_delay`. |
+| 25 | 2026-10-07 | Judge citizen sensors' freshness against their calibration delay: amber when a sensor is behind the newest Samen Meten hour on the map or its reading is 3 hours or older, and off the map after 5 hours. Official stations keep #15 (amber from 1 hour, off after 3). | Decided | Citizen readings are normally 1h40–2h40 old (#24), so the 1-hour amber rule marked every sensor late and told people nothing, and the 3-hour cut-off left minutes of margin. Shifting both windows by 2 hours gives sensors the same slack as official stations: about two missed hours before they leave the map. "Behind the newest hour" catches a sensor that missed one hour, which a fixed age threshold would only flag late in that hour. The 3-hour age check still turns every sensor amber if the collector stops. The panel and the data dialog say that sensor readings arrive about 2 hours later. Built: `isLate()` in `lib/air-quality.ts` and the `station_readings_now` view. |
 
 ## Database schema
 
@@ -213,7 +237,7 @@ See [supabase/migrations/](supabase/migrations/) for the schema and [supabase/RE
   - Primary key `(station_id, quantity, measured_at)`, plus an index on `measured_at` for "last 3 hours" queries and retention deletes.
   - `quantity` is one of `pm25`, `pm10`, `no2`, `o3`, `nh3` or `lki`. For Samen Meten sensors, `pm25` and `pm10` are the calibrated values.
   - `measured_at` is the end of the hour.
-- **`station_readings_now`** (view, `security_invoker`): one row per located station with a reading in the last 3 hours (#15).
+- **`station_readings_now`** (view, `security_invoker`): one row per located station with a recent reading: the last 3 hours for official stations (#15), 5 hours for citizen sensors (#25).
   - `readings` is a jsonb object `{quantity: {value, measured_at}}`.
   - `measured_at` is the newest of those readings.
   - This is what the map loads.
@@ -230,13 +254,14 @@ See [supabase/migrations/](supabase/migrations/) for the schema and [supabase/RE
 
 The visual reference is [docs/design/huisstijl.html](docs/design/huisstijl.html), summarized in [CLAUDE.md](CLAUDE.md).
 
-- **Page:** [app/page.tsx](app/page.tsx) has a header (Fyka mark, light/dark toggle) and the map with a side panel ([components/air/](components/air/)). On mobile, the panel sits below the map.
+- **Page:** [app/page.tsx](app/page.tsx) has a header row with the address search on the left and only the light/dark toggle and app switcher on the right. The Fyka Air mark and the GitHub ("Bekijk de code") and "Steun mij" links are in the footer of the "Over de data" dialog ([data-info.tsx](components/air/data-info.tsx)). Below the header is the map with a side panel ([components/air/](components/air/)). From `lg` up, the panel floats over the right side of the map, so opening it doesn't resize the map or move the view; the map's own controls shift left by the panel width (`--panel`). On mobile, the panel sits below the map.
 - **Data:** `getStationReadings()` in [lib/air-data.ts](lib/air-data.ts) (#20).
 - **Map:**
-  - [station-layer.tsx](components/air/station-layer.tsx) draws a MapLibre layer on top of mapcn's `useMap()`. Official stations are large LKI-colored circles with a halo. Citizen sensors are small dots without one, drawn underneath. Higher LKI values are drawn on top, and anything without an index is steel blue.
+  - [station-layer.tsx](components/air/station-layer.tsx) draws a MapLibre layer on top of mapcn's `useMap()`. Official stations are large LKI-colored circles and citizen sensors are small dots drawn underneath, both with a thin grey outline. Higher LKI values are drawn on top, and anything without an index is steel blue.
   - About 2,200 stations and sensors are loaded at once. `getStationReadings()` pages through the view, because the Data API returns at most 1,000 rows per request.
   - [lib/map-style.ts](lib/map-style.ts) loads the OpenFreeMap styles on the server, cached for a day. It recolors background, land use, parks, buildings and water per theme, and replaces English label names (`name_en`) with `name:nl`, falling back to `name`. Client components must not import it, because it contains a `"use cache"` function.
-- **Panel:** with no station selected, it shows an overview (stations per LKI category, the latest measurement time). Clicking a station shows its LKI, advice, pollutant values against WHO guidelines, and a chart. A citizen sensor shows "Burgersensor" and "Gekalibreerd door het RIVM" badges, its network and code, and only what it measures, with a note that its index is based on fine dust only (#22).
+- **Panel:** closed by default, so the map fills the page. The "Overzicht Nederland" button at the bottom right of the map opens an overview (stations per LKI category, the latest measurement time). Both the overview and a station close with a cross; selecting a station replaces the overview, and closing it returns to the full map. Clicking a station shows its LKI, advice, pollutant values against WHO guidelines, and a chart. A citizen sensor shows "Burgersensor" and "Gekalibreerd door het RIVM" badges, its network and code, and only what it measures, with a note that its index is based on fine dust only (#22).
+- **Data info** ([data-info.tsx](components/air/data-info.tsx)): an ⓘ button next to "Overzicht Nederland" opens a dialog. It shows how many official stations and citizen sensors are on the map, where each comes from (Luchtmeetnet, RIVM Samen Meten), the number of sensor networks and the three largest, all counted from the loaded stations.
 - **Chart** ([station-chart.tsx](components/air/station-chart.tsx)):
   - Tabs for the pollutant (only those the station measures) and the period: 24 hours (hourly line) or 7 days (daily-mean bars).
   - The WHO guideline is a dashed reference line. Missing hours show as gaps, and the tooltip shows how many hours went into each daily mean.
@@ -246,7 +271,7 @@ The visual reference is [docs/design/huisstijl.html](docs/design/huisstijl.html)
   - Finds stations by name, code or municipality, plus addresses, streets, postcodes, places and municipalities through PDOK Locatieserver's `suggest` endpoint. Only `suggest` handles half-typed words, and it returns coordinates via `fl=centroide_ll`.
   - The browser calls PDOK directly: the API is public and allows CORS, and what people type goes to a Dutch government service.
   - Choosing a place pins it, selects the nearest station, zooms to show both, and shows the distance in the panel.
-- **Scales, names and Dutch formatting:** [lib/air-quality.ts](lib/air-quality.ts). The LKI hex colors are our own picks in RIVM's color order and still need checking against the official legend.
+- **Scales, names and Dutch formatting:** [lib/air-quality.ts](lib/air-quality.ts). LKI colors per decision #23.
 - **Theme tokens:** the Fyka base colors and the sky accent are mapped onto shadcn's variables in [app/globals.css](app/globals.css), with extra `brand-text`, `brand-soft`, `steel`, `ok` and `warn` colors.
 
 ### Environment variables
@@ -258,14 +283,19 @@ Set these in `.env.local` locally and in Vercel's project settings. [.env.exampl
 | `SUPABASE_URL` | `https://uoocwxpfujiwfrhkkskb.supabase.co` |
 | `SUPABASE_PUBLISHABLE_KEY` | The project's publishable key (`sb_publishable_...`). It only allows reads. |
 
+### Next steps
+
+Updated 2026-10-06. Pick up here in a new session.
+
+1. **Launch:** push to GitHub, deploy to Vercel with the environment variables below, and add Fyka Watch analytics (#13).
+2. **Check the new Samen Meten schedule** (#24): the :40 sweep should now store about 3,400 rows per hour (`select * from net._http_response order by created desc`). If it often stores far fewer than the :55 re-sweep, calibrated values arrive later than :40 and the sweep should move later.
+3. **Check the database size** about a week after 2026-10-05 (see the storage estimate).
+4. **The rest of the open points** below.
+5. **Later:** move to EU infrastructure (#4).
+
 ### Open points
 
-- **Freshness dot:** the newest reading is often older than an hour, so the house style's "amber after 1 hour" rule triggers often. Consider 90 minutes.
-  - Luchtmeetnet publishes about 10 minutes after the hour and its collector runs at :15, so readings are 60–75 minutes old at worst.
-  - Samen Meten publishes about 30 minutes after the hour and its collector runs at :40, so readings are 40–100 minutes old.
-- **Samen Meten calibration delay:** at 19:38 UTC the 19:00 hour already had 7,200 observations (raw and meteo) but no calibrated PM. RIVM publishes calibrated values later than raw ones.
-  - The effect: the :40 run usually stores nothing, and the :55 re-sweep of the previous hour does the work. Sensor data then lags about 2 hours, close to the 3-hour cut-off on the map (#15), so one failed run makes sensors disappear.
-  - To do: measure when `*_kal` values appear and shift the schedule, for example sweep 1 and 2 hours ago instead of 0 and 1.
+- **Freshness dot for official stations:** Luchtmeetnet publishes about 10 minutes after the hour and its collector runs at :15, so readings are up to 75 minutes old and the "amber after 1 hour" rule triggers in the last quarter of every hour. Consider 90 minutes. (Citizen sensors have their own windows, #25.)
 - **Supabase free-tier pausing:** free projects are paused after a period of inactivity. Check whether the collectors' own requests count as activity; if the project gets paused, collection stops.
 - **Payload:** the page sends about 2,200 stations with their readings to the browser. If it gets slow, send a slim list for the map and load details on click.
 - **MapLibre worker:** mapcn loads MapLibre's web worker from unpkg. Self-host it from `public/` once we move toward EU infrastructure.
@@ -278,8 +308,8 @@ Set these in `.env.local` locally and in Vercel's project settings. [.env.exampl
   - Refresh details for up to 20 stations per run, oldest first and 1 s apart. That's about 23 requests per run, well under the limit, and every station gets refreshed daily.
   - Tolerate connection resets by retrying with backoff.
 - **Samen Meten** (built: [supabase/functions/collect-samenmeten](supabase/functions/collect-samenmeten/), testable with `npm run check:samenmeten`)
-  - **:40:** sweep the hour labelled with the current hour, which is published by about :30.
-  - **:55:** re-sweep the previous hour to pick up late data.
+  - **:40:** sweep the previous hour (`hoursAgo: 1`). Its calibrated values are published by then; the current hour only has raw values (#24).
+  - **:55:** sweep the previous hour again, to retry a failed :40 run and pick up late values.
   - **:05:** "things" mode. When any sensor's details are missing or more than 7 days old, fetch the full Thing inventory (about 8 s, 300 ms of CPU) and update every known sensor in one call.
   - **Each sweep:** about 70 s and 300 ms of CPU, within the Edge Function's 150 s / 2 s limits. Writes about 3,400 rows, then runs `compute_citizen_lki` for that hour.
   - Never sweep an hour that's still being filled.

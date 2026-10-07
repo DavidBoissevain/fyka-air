@@ -202,26 +202,30 @@ export function StationChart({ station }: { station: StationReading }) {
         WHO-advieswaarde voor een daggemiddelde.
       </p>
 
-      <table className="sr-only">
-        <caption>
-          {period === "day" ? "Uurwaarden" : "Daggemiddelden"} {QUANTITY_NAMES[quantity]} in µg/m³
-        </caption>
-        <tbody>
-          {period === "day"
-            ? hourly.map((p) => (
-                <tr key={p.t}>
-                  <th scope="row">{formatTime(new Date(p.t).toISOString())}</th>
-                  <td>{p.v === null ? "geen meting" : formatNumber(p.v)}</td>
-                </tr>
-              ))
-            : daily.map((d) => (
-                <tr key={d.day}>
-                  <th scope="row">{formatDay(d.day, true)}</th>
-                  <td>{d.v === null ? "geen meting" : formatNumber(d.v)}</td>
-                </tr>
-              ))}
-        </tbody>
-      </table>
+      {/* sr-only on a wrapper: a table ignores the 1px height and overflow, so
+          its rows would still add scroll height. */}
+      <div className="sr-only">
+        <table>
+          <caption>
+            {period === "day" ? "Uurwaarden" : "Daggemiddelden"} {QUANTITY_NAMES[quantity]} in µg/m³
+          </caption>
+          <tbody>
+            {period === "day"
+              ? hourly.map((p) => (
+                  <tr key={p.t}>
+                    <th scope="row">{formatTime(new Date(p.t).toISOString())}</th>
+                    <td>{p.v === null ? "geen meting" : formatNumber(p.v)}</td>
+                  </tr>
+                ))
+              : daily.map((d) => (
+                  <tr key={d.day}>
+                    <th scope="row">{formatDay(d.day, true)}</th>
+                    <td>{d.v === null ? "geen meting" : formatNumber(d.v)}</td>
+                  </tr>
+                ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

@@ -36,8 +36,9 @@ export type StationHistory = {
   daily: Partial<Record<ChartQuantity, { day: string; v: number | null; hours: number }[]>>;
 };
 
-// RIVM Luchtkwaliteitsindex 1–11. The hex values are Fyka's own picks in
-// RIVM's colour order and still need checking against the official legend.
+// LKI colours, one per index 1–11 (decision #23 in TECHNICAL.md): the house
+// style's own scale, from deep blue to purple, close in look to RIVM Samen
+// Meten's map. It does not copy Luchtmeetnet's 5-colour legend.
 export const LKI_COLORS = [
   { bg: "#0A3FC2", fg: "#FFFFFF" },
   { bg: "#2F74F0", fg: "#FFFFFF" },
@@ -52,15 +53,19 @@ export const LKI_COLORS = [
   { bg: "#7E2BB8", fg: "#FFFFFF" },
 ] as const;
 
-// Map dot colour for stations that report no index.
-export const NO_INDEX_COLOR = "#7B93B5";
+// Thin grey outline around LKI marks, so pale colours stay visible on a light map.
+export const LKI_OUTLINE = { light: "#8C939D", dark: "#64748B" } as const;
+
+// Stations without an index, in Luchtmeetnet's "Geen data beschikbaar" grey.
+export const NO_INDEX_COLOR = "#70757F";
 
 export const LKI_CATEGORIES = [
-  { name: "Goed", from: 1, to: 3, advice: "Geen klachten te verwachten. Ga gerust naar buiten." },
-  { name: "Matig", from: 4, to: 6, advice: "Mensen die gevoelig zijn voor luchtvervuiling kunnen klachten merken." },
-  { name: "Onvoldoende", from: 7, to: 8, advice: "Gevoelige mensen beperken zware inspanning buiten beter." },
-  { name: "Slecht", from: 9, to: 10, advice: "Iedereen kan klachten krijgen. Beperk zware inspanning buiten." },
-  { name: "Zeer slecht", from: 11, to: 11, advice: "Vermijd zware inspanning buiten. Gevoelige mensen blijven beter binnen." },
+  // color: the middle step of the category, for category-level marks like the overview bars.
+  { name: "Goed", from: 1, to: 3, color: "#2F74F0", advice: "Geen klachten te verwachten. Ga gerust naar buiten." },
+  { name: "Matig", from: 4, to: 6, color: "#FFD84D", advice: "Mensen die gevoelig zijn voor luchtvervuiling kunnen klachten merken." },
+  { name: "Onvoldoende", from: 7, to: 8, color: "#FF7A1A", advice: "Gevoelige mensen beperken zware inspanning buiten beter." },
+  { name: "Slecht", from: 9, to: 10, color: "#D21F3C", advice: "Iedereen kan klachten krijgen. Beperk zware inspanning buiten." },
+  { name: "Zeer slecht", from: 11, to: 11, color: "#7E2BB8", advice: "Vermijd zware inspanning buiten. Gevoelige mensen blijven beter binnen." },
 ] as const;
 
 export function lkiIndex(value: number | undefined) {
@@ -143,6 +148,16 @@ export function formatAge(iso: string, now: number) {
   return minutes < 60 ? `${minutes} min geleden` : `${Math.floor(minutes / 60)} uur geleden`;
 }
 
-export function isLate(iso: string, now: number) {
-  return now - Date.parse(iso) >= 60 * 60 * 1000;
+// Calibrated citizen-sensor values arrive about 2 hours after the hour they
+// cover, because the RIVM calibrates them first (decision #25 in TECHNICAL.md).
+export const CITIZEN_DELAY_HOURS = 2;
+
+const HOUR_MS = 60 * 60 * 1000;
+
+// Late (amber dot): over an hour past the source's normal delay, or, for a
+// citizen sensor, behind the newest Samen Meten hour on the map.
+export function isLate(iso: string, now: number, citizen?: { newest: string | null }) {
+  const measured = Date.parse(iso);
+  if (now - measured >= (1 + (citizen ? CITIZEN_DELAY_HOURS : 0)) * HOUR_MS) return true;
+  return citizen?.newest != null && measured < Date.parse(citizen.newest);
 }

@@ -10,7 +10,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useNow } from "@/hooks/use-now";
 import {
   LKI_CATEGORIES,
-  LKI_COLORS,
   QUANTITY_NAMES,
   STATION_TYPES,
   WHO_GUIDELINE,
@@ -30,9 +29,10 @@ import { cn } from "@/lib/utils";
 
 const POLLUTANTS: Quantity[] = ["pm25", "pm10", "no2", "o3"];
 
-export function Freshness({ measuredAt }: { measuredAt: string }) {
+// `citizen` judges a citizen sensor against its calibration delay and the newest Samen Meten hour.
+export function Freshness({ measuredAt, citizen }: { measuredAt: string; citizen?: { newest: string | null } }) {
   const now = useNow();
-  const late = now !== null && isLate(measuredAt, now);
+  const late = now !== null && isLate(measuredAt, now, citizen);
   return (
     <span className="text-muted-foreground inline-flex items-center gap-1.5 text-sm">
       <span className={cn("size-2 rounded-full", late ? "bg-warn" : "bg-ok")} aria-hidden />
@@ -49,7 +49,7 @@ function LkiSummary({ value, citizen }: { value: number | undefined; citizen: bo
   return (
     <div className="flex items-center gap-4">
       <div
-        className="grid size-16 shrink-0 place-items-center rounded-2xl text-[1.75rem] font-bold tabular-nums"
+        className="grid size-16 shrink-0 place-items-center rounded-2xl text-[1.75rem] font-bold tabular-nums ring-1 ring-black/10 ring-inset"
         style={color ? { background: color.bg, color: color.fg } : undefined}
         aria-label={index ? `LKI ${index}` : "Geen index"}
       >
@@ -105,10 +105,12 @@ type DetailsProps = {
   station: StationReading;
   // The searched address or place, to show how far away the station is.
   place?: Place | null;
+  // The newest Samen Meten hour on the map; a citizen sensor behind it is late.
+  newestCitizen: string | null;
   onClose: () => void;
 };
 
-export function StationDetails({ station, place, onClose }: DetailsProps) {
+export function StationDetails({ station, place, newestCitizen, onClose }: DetailsProps) {
   const citizen = station.kind === "citizen";
   const type = station.details.type ? STATION_TYPES[station.details.type] ?? station.details.type : null;
   const source = citizen ? station.details.project ?? station.organisation : null;
@@ -147,7 +149,7 @@ export function StationDetails({ station, place, onClose }: DetailsProps) {
           {subtitle && " · "}
           <span className="font-mono text-[0.92em]">{station.external_id}</span>
         </p>
-        <Freshness measuredAt={station.measured_at} />
+        <Freshness measuredAt={station.measured_at} citizen={citizen ? { newest: newestCitizen } : undefined} />
         {place && (
           <span className="text-muted-foreground inline-flex items-center gap-1.5 text-sm">
             <MapPinIcon className="size-3.5 shrink-0" aria-hidden />
@@ -173,6 +175,7 @@ export function StationDetails({ station, place, onClose }: DetailsProps) {
         <p className="text-muted-foreground border-t pt-2 text-xs">
           µg/m³, uurwaarde{citizen && ", gekalibreerd door het RIVM tegen officiële meetstations in de buurt"}. Het
           streepje is de WHO-advieswaarde voor een daggemiddelde.
+          {citizen && " Door de kalibratie komen metingen van burgersensoren ongeveer 2 uur later binnen."}
         </p>
       </div>
 
@@ -183,7 +186,7 @@ export function StationDetails({ station, place, onClose }: DetailsProps) {
   );
 }
 
-export function Overview({ stations: all }: { stations: StationReading[] }) {
+export function Overview({ stations: all, onClose }: { stations: StationReading[]; onClose: () => void }) {
   // The category bars show official stations; sensors use a fine-dust-only index.
   const stations = all.filter((s) => s.kind === "professional");
   const sensorCount = all.length - stations.length;
@@ -203,10 +206,17 @@ export function Overview({ stations: all }: { stations: StationReading[] }) {
   return (
     <div className="grid content-start gap-5">
       <div className="grid gap-1.5">
-        <span className="text-muted-foreground text-xs font-semibold tracking-[0.08em] uppercase">
-          Luchtkwaliteit nu
-        </span>
-        <h2 className="text-[1.75rem] leading-tight font-semibold tracking-tight">Nederland</h2>
+        <div className="flex items-start justify-between gap-2.5">
+          <div className="grid gap-1.5">
+            <span className="text-muted-foreground text-xs font-semibold tracking-[0.08em] uppercase">
+              Luchtkwaliteit nu
+            </span>
+            <h2 className="text-[1.75rem] leading-tight font-semibold tracking-tight">Nederland</h2>
+          </div>
+          <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="Sluiten" className="-mr-1.5">
+            <XIcon />
+          </Button>
+        </div>
         <p className="text-muted-foreground text-sm">
           {stations.length} officiële meetstations en {sensorCount.toLocaleString("nl-NL")} burgersensoren met een
           recente meting.
@@ -224,11 +234,8 @@ export function Overview({ stations: all }: { stations: StationReading[] }) {
               <span className="font-medium">{category.name}</span>
               <div className="bg-muted h-2 overflow-hidden rounded-full">
                 <i
-                  className="block h-full rounded-full"
-                  style={{
-                    width: `${(count / withIndex) * 100}%`,
-                    background: LKI_COLORS[category.from + Math.floor((category.to - category.from) / 2) - 1].bg,
-                  }}
+                  className="block h-full rounded-full ring-1 ring-black/15 ring-inset"
+                  style={{ width: `${(count / withIndex) * 100}%`, background: category.color }}
                 />
               </div>
               <span className="text-right tabular-nums">{count}</span>

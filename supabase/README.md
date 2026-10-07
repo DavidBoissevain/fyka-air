@@ -24,8 +24,8 @@ Citizen sensors from RIVM Samen Meten. `pg_cron` calls it three times an hour wi
 
 | When | Body | What it does |
 |---|---|---|
-| :40 | `{"mode": "sweep", "hoursAgo": 0}` | Fetches the hour labelled with the current hour, upserts it, and computes citizen-sensor LKI for that hour |
-| :55 | `{"mode": "sweep", "hoursAgo": 1}` | Re-sweeps the previous hour for late data |
+| :40 | `{"mode": "sweep", "hoursAgo": 1}` | Fetches the previous hour, upserts it, and computes citizen-sensor LKI for that hour. Not the current hour: RIVM publishes calibrated values about an hour after raw ones (decision #24 in TECHNICAL.md) |
+| :55 | `{"mode": "sweep", "hoursAgo": 1}` | Sweeps the previous hour again, to retry a failed :40 run and pick up late values |
 | :05 | `{"mode": "things"}` | When sensors lack details (location, network) or they're older than 7 days, reads the full sensor inventory and updates them |
 
 To backfill a specific hour, send `{"mode": "sweep", "hour": "2026-10-05T18:00:00Z"}`. Test the API client without Supabase with `npm run check:samenmeten`.

@@ -137,7 +137,8 @@ export function MapSearch({ stations, onSelectStation, onSelectPlace, onClear, c
 
   return (
     <div className={cn("absolute z-20", className)}>
-      <InputGroup className="bg-card h-10 shadow-lg dark:bg-card">
+      {/* Same height, border and rounding as the header's control buttons, as it shares their row. */}
+      <InputGroup className="bg-background/80 dark:bg-card/80 border-border h-11 border-2 shadow-lg backdrop-blur-sm md:h-13 md:rounded-xl">
         <InputGroupAddon className="cursor-pointer">
           <SearchIcon />
         </InputGroupAddon>
@@ -188,7 +189,7 @@ export function MapSearch({ stations, onSelectStation, onSelectPlace, onClear, c
                 )}
               >
                 {isStation ? (
-                  <span className="size-2.5 justify-self-center rounded-full" style={{ background: color! }} />
+                  <span className="size-2.5 justify-self-center rounded-full ring-1 ring-black/25" style={{ background: color! }} />
                 ) : (
                   <MapPinIcon className="text-muted-foreground size-4" aria-hidden />
                 )}
