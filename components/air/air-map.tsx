@@ -7,7 +7,7 @@ import type { StyleSpecification } from "maplibre-gl";
 import { Button } from "@/components/ui/button";
 import { Map, MapControls, MapMarker, MapPopup, MarkerContent } from "@/components/ui/map";
 import { DataInfo } from "@/components/air/data-info";
-import { LayerMenu } from "@/components/air/layer-menu";
+import { LayerPicker } from "@/components/air/layer-picker";
 import { MapSearch } from "@/components/air/map-search";
 import { PointValue } from "@/components/air/point-value";
 import { RivmLayer } from "@/components/air/rivm-layer";
@@ -194,11 +194,16 @@ export function AirMap({ stations, styles }: Props) {
             </MapPopup>
           )}
         </Map>
+        {/* Under the search box, aligned with the zoom controls on the right. */}
+        <LayerPicker
+          value={mapLayer}
+          onChange={chooseLayer}
+          className="absolute top-17 left-6 z-10 max-w-[calc(100%-6.5rem)] md:top-19"
+        />
         {/* Legend bottom left, buttons bottom right; on phones the buttons sit above the full-width legend. */}
         <div className="pointer-events-none absolute right-3 bottom-4 left-4 z-10 flex flex-col-reverse items-start gap-2 sm:flex-row sm:items-end sm:justify-between lg:right-[calc(var(--panel)+0.75rem)]">
           <Legend layer={mapLayer} />
           <div className="pointer-events-auto flex gap-2 self-end sm:mb-4">
-            <LayerMenu value={mapLayer} onChange={chooseLayer} />
             <DataInfo stations={stations} />
             {!overviewOpen && (
               <Button

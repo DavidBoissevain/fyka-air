@@ -115,14 +115,51 @@ export function categoryRanges(quantity: BandQuantity) {
 }
 
 // What the map colours by: the area layer (RIVM, decision #26) and the dots.
-// "off" hides the area and colours the dots by LKI.
+// "off" hides the area and colours the dots by LKI. Ordered by importance for
+// health (decision #28): the overall index first, then PM2.5, NO2, O3, PM10.
 export const MAP_LAYERS = [
-  { id: "lki", label: "Luchtkwaliteitsindex", legend: "Luchtkwaliteitsindex" },
-  { id: "pm25", label: "Fijnstof (PM2,5)", legend: "Fijnstof PM2,5 per uur, in µg/m³" },
-  { id: "pm10", label: "Fijnstof (PM10)", legend: "Fijnstof PM10 per uur, in µg/m³" },
-  { id: "no2", label: "Stikstofdioxide (NO₂)", legend: "Stikstofdioxide NO₂ per uur, in µg/m³" },
-  { id: "o3", label: "Ozon (O₃)", legend: "Ozon O₃ per uur, in µg/m³" },
-  { id: "off", label: "Alleen meetpunten", legend: "Luchtkwaliteitsindex" },
+  {
+    id: "lki",
+    label: "Luchtkwaliteitsindex",
+    tag: "Totaalbeeld",
+    hint: "Begin hier: alle stoffen samen, met advies per niveau.",
+    legend: "Luchtkwaliteitsindex",
+  },
+  {
+    id: "pm25",
+    label: "Fijnstof (PM2,5)",
+    tag: "Grootste gezondheidsrisico",
+    hint: "Kleine deeltjes die diep in je longen en bloed komen.",
+    legend: "Fijnstof PM2,5 per uur, in µg/m³",
+  },
+  {
+    id: "no2",
+    label: "Stikstofdioxide (NO₂)",
+    tag: "Verkeer",
+    hint: "Vooral langs drukke wegen. Belangrijk bij astma.",
+    legend: "Stikstofdioxide NO₂ per uur, in µg/m³",
+  },
+  {
+    id: "o3",
+    label: "Ozon (O₃)",
+    tag: "Zomersmog",
+    hint: "Hoog op warme, zonnige middagen. Let op bij buiten sporten.",
+    legend: "Ozon O₃ per uur, in µg/m³",
+  },
+  {
+    id: "pm10",
+    label: "Fijnstof (PM10)",
+    tag: "Grover stof",
+    hint: "Prikkelt neus, keel en luchtwegen.",
+    legend: "Fijnstof PM10 per uur, in µg/m³",
+  },
+  {
+    id: "off",
+    label: "Alleen meetpunten",
+    tag: null,
+    hint: "Alleen de metingen, zonder gekleurd gebied.",
+    legend: "Luchtkwaliteitsindex",
+  },
 ] as const;
 export type MapLayer = (typeof MAP_LAYERS)[number]["id"];
 export type AreaLayer = Exclude<MapLayer, "off">;
