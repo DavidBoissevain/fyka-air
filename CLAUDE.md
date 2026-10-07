@@ -46,4 +46,5 @@ Before building or changing any UI, follow the Fyka Air huisstijl in [docs/desig
 
 - Build with the shadcn/ui components in `components/ui` (base-nova, Base UI). Radius is `--radius` (0.625rem); badges and the theme toggle are fully rounded.
 - Map: MapLibre GL with a quiet basemap. Use the reference page's map colours for water, land, borders, labels and halos in light and dark mode. PDOK has no dark style, so the dark variant is our own.
+- Area layer: RIVM's calculated map (decision #26 in TECHNICAL.md) sits under roads, labels and the dots, in our LKI colours only. Always label it as RIVM's calculation ("berekend door het RIVM", an estimate, not a measurement) and credit luchtmeetnet.nl. With a pollutant layer chosen, the dots use the same pollutant and bands (#27).
 - Logo: the Fyka three-wave mark, plus the Fyka Air app mark "Stroom" (sky tile, 25% rounding, white glyph of two air currents and a particle at 60%), following the app mark recipe in fyka-website's `app-marks.tsx`. Use `AirMark` from `components/air-mark.tsx`. The same glyph is in `app/icon.svg` (favicon) and `app/apple-icon.tsx`; change all three together.

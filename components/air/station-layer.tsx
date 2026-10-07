@@ -5,7 +5,15 @@ import type * as GeoJSON from "geojson";
 import type * as MapLibreGL from "maplibre-gl";
 
 import { useMap } from "@/components/ui/map";
-import { LKI_OUTLINE, NO_INDEX_COLOR, lkiColor, lkiIndex, type StationReading } from "@/lib/air-quality";
+import {
+  LKI_OUTLINE,
+  NO_INDEX_COLOR,
+  lkiColor,
+  lkiIndex,
+  subIndex,
+  type BandQuantity,
+  type StationReading,
+} from "@/lib/air-quality";
 
 const SOURCE = "stations";
 const LAYER = "stations";
@@ -21,14 +29,24 @@ const THEME = {
 
 type Props = {
   stations: StationReading[];
+  // The LKI, or one pollutant's hourly value in its LKI sub-index bands (decision #27).
+  colorBy: "lki" | BandQuantity;
   selectedId: number | null;
   onSelect: (id: number | null) => void;
+  // A click on the map that hits no station.
+  onMapClick?: (lngLat: MapLibreGL.LngLat) => void;
 };
 
+function dotIndex(station: StationReading, colorBy: Props["colorBy"]) {
+  return colorBy === "lki"
+    ? lkiIndex(station.readings.lki?.value)
+    : subIndex(colorBy, station.readings[colorBy]?.value);
+}
+
 // Official stations as large LKI-coloured dots, citizen sensors as small dots
-// underneath, both with a thin grey outline. Higher LKI values are
-// drawn on top, so problem spots stay visible in dense areas.
-export function StationLayer({ stations, selectedId, onSelect }: Props) {
+// underneath, both with a thin grey outline. Higher values are drawn on top,
+// so problem spots stay visible in dense areas.
+export function StationLayer({ stations, colorBy, selectedId, onSelect, onMapClick }: Props) {
   const { map, isLoaded, resolvedTheme } = useMap();
   const colors = THEME[resolvedTheme];
 
@@ -36,7 +54,7 @@ export function StationLayer({ stations, selectedId, onSelect }: Props) {
     () => ({
       type: "FeatureCollection",
       features: stations.map((s) => {
-        const index = lkiIndex(s.readings.lki?.value);
+        const index = dotIndex(s, colorBy);
         return {
           type: "Feature",
           geometry: { type: "Point", coordinates: [s.longitude, s.latitude] },
@@ -44,7 +62,7 @@ export function StationLayer({ stations, selectedId, onSelect }: Props) {
         };
       }),
     }),
-    [stations],
+    [stations, colorBy],
   );
 
   // Latest values for the setup effect below, which only re-runs on style loads.
@@ -53,6 +71,7 @@ export function StationLayer({ stations, selectedId, onSelect }: Props) {
     latest.current = { data, selectedId };
   });
   const select = useEffectEvent(onSelect);
+  const clickMap = useEffectEvent((lngLat: MapLibreGL.LngLat) => onMapClick?.(lngLat));
 
   // Add source and layers once the style is loaded; they are re-added after a theme switch.
   useEffect(() => {
@@ -112,6 +131,7 @@ export function StationLayer({ stations, selectedId, onSelect }: Props) {
       const features = map.queryRenderedFeatures(e.point, { layers: CLICKABLE });
       const feature = features.find((f) => f.properties.kind === "professional") ?? features[0];
       select(feature ? Number(feature.properties.id) : null);
+      if (!feature) clickMap(e.lngLat);
     };
     const pointer = () => (map.getCanvas().style.cursor = "pointer");
     const unpointer = () => (map.getCanvas().style.cursor = "");

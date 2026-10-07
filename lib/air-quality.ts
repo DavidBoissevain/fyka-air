@@ -81,6 +81,52 @@ export function lkiCategory(index: number) {
   return LKI_CATEGORIES.find((c) => index <= c.to) ?? LKI_CATEGORIES[4];
 }
 
+// Pollutants with an LKI sub-index and an RIVM map layer.
+export const BAND_QUANTITIES = ["pm25", "pm10", "no2", "o3"] as const;
+export type BandQuantity = (typeof BAND_QUANTITIES)[number];
+
+// LKI sub-index class edges in µg/m³: a value below the i-th edge gets index
+// i (1-based), above the last 11. The same as lki_sub_index() in the database
+// (migration 20261005192736, decision #22); the category bounds also match
+// RIVM's own map styles (decision #27).
+export const SUB_INDEX_EDGES: Record<BandQuantity, readonly number[]> = {
+  pm25: [10, 15, 20, 30, 40, 50, 70, 90, 100, 140],
+  pm10: [10, 20, 30, 45, 60, 75, 100, 125, 150, 200],
+  no2: [10, 20, 30, 45, 60, 75, 100, 125, 150, 200],
+  o3: [15, 30, 40, 60, 80, 100, 140, 180, 200, 240],
+};
+
+export function subIndex(quantity: BandQuantity, value: number | undefined | null) {
+  if (value == null || !Number.isFinite(value)) return null;
+  const i = SUB_INDEX_EDGES[quantity].findIndex((edge) => value < edge);
+  return i === -1 ? 11 : i + 1;
+}
+
+// RIVM's map LKI is continuous (3.74); Luchtmeetnet rounds it up to the index.
+export function lkiIndexFromContinuous(value: number | undefined | null) {
+  if (value == null || !Number.isFinite(value) || value < 0) return null;
+  return Math.min(11, Math.max(1, Math.ceil(value)));
+}
+
+// Upper bound per category, for "Goed tot 20 · Matig tot 50 · …".
+export function categoryRanges(quantity: BandQuantity) {
+  const edges = SUB_INDEX_EDGES[quantity];
+  return LKI_CATEGORIES.map((c) => ({ name: c.name, upTo: c.to < 11 ? edges[c.to - 1] : null }));
+}
+
+// What the map colours by: the area layer (RIVM, decision #26) and the dots.
+// "off" hides the area and colours the dots by LKI.
+export const MAP_LAYERS = [
+  { id: "lki", label: "Luchtkwaliteitsindex", legend: "Luchtkwaliteitsindex" },
+  { id: "pm25", label: "Fijnstof (PM2,5)", legend: "Fijnstof PM2,5 per uur, in µg/m³" },
+  { id: "pm10", label: "Fijnstof (PM10)", legend: "Fijnstof PM10 per uur, in µg/m³" },
+  { id: "no2", label: "Stikstofdioxide (NO₂)", legend: "Stikstofdioxide NO₂ per uur, in µg/m³" },
+  { id: "o3", label: "Ozon (O₃)", legend: "Ozon O₃ per uur, in µg/m³" },
+  { id: "off", label: "Alleen meetpunten", legend: "Luchtkwaliteitsindex" },
+] as const;
+export type MapLayer = (typeof MAP_LAYERS)[number]["id"];
+export type AreaLayer = Exclude<MapLayer, "off">;
+
 // WHO 2021 guideline values in µg/m³ (24-hour mean; 8-hour mean for O₃).
 export const WHO_GUIDELINE: Partial<Record<Quantity, number>> = {
   pm25: 15,

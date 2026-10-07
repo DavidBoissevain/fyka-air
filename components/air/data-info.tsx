@@ -127,6 +127,19 @@ export function DataInfo({ stations, className }: { stations: StationReading[]; 
               </p>
             )}
           </Source>
+
+          {/* The RIVM area layer (decision #26). */}
+          <section className="grid gap-1.5 rounded-lg border p-3.5">
+            <h3 className="font-semibold">Gekleurd gebied</h3>
+            <p className="text-muted-foreground">
+              Elk uur berekend door het RIVM uit de metingen van de officiële meetstations, plus een model voor
+              snelwegen. Het is een schatting, geen meting. Klik naast de stippen voor de waarde op die plek. Bron:{" "}
+              <a href="https://www.luchtmeetnet.nl" target="_blank" rel="noopener noreferrer" className={linkClass}>
+                luchtmeetnet.nl
+              </a>
+              .
+            </p>
+          </section>
         </div>
 
         <p className="text-muted-foreground text-xs">

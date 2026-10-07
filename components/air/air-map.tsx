@@ -5,12 +5,24 @@ import { ChartBarIcon } from "lucide-react";
 import type { StyleSpecification } from "maplibre-gl";
 
 import { Button } from "@/components/ui/button";
-import { Map, MapControls, MapMarker, MarkerContent } from "@/components/ui/map";
+import { Map, MapControls, MapMarker, MapPopup, MarkerContent } from "@/components/ui/map";
 import { DataInfo } from "@/components/air/data-info";
+import { LayerMenu } from "@/components/air/layer-menu";
 import { MapSearch } from "@/components/air/map-search";
+import { PointValue } from "@/components/air/point-value";
+import { RivmLayer } from "@/components/air/rivm-layer";
 import { StationLayer } from "@/components/air/station-layer";
 import { Overview, StationDetails } from "@/components/air/station-panel";
-import { LKI_COLORS, NO_INDEX_COLOR, type StationReading } from "@/lib/air-quality";
+import {
+  LKI_COLORS,
+  MAP_LAYERS,
+  NO_INDEX_COLOR,
+  categoryRanges,
+  type AreaLayer,
+  type MapLayer,
+  type StationReading,
+} from "@/lib/air-quality";
+import { setMapLayer, useMapLayer } from "@/hooks/use-map-layer";
 import type { Place } from "@/lib/geocode";
 import { cn } from "@/lib/utils";
 
@@ -22,19 +34,32 @@ const NL_BOUNDS: [[number, number], [number, number]] = [
   [7.25, 53.55],
 ];
 
-function Legend() {
+function Legend({ layer }: { layer: MapLayer }) {
+  const info = MAP_LAYERS.find((l) => l.id === layer) ?? MAP_LAYERS[0];
+  const pollutant = layer === "lki" || layer === "off" ? null : layer;
   return (
-    <div className="bg-card/95 absolute bottom-4 left-4 z-10 grid max-w-[calc(100%-2rem)] gap-2 rounded-lg border px-3 py-2.5 text-xs shadow-lg backdrop-blur-sm">
+    <div className="bg-card/95 pointer-events-auto grid max-w-full gap-2 rounded-lg border px-3 py-2.5 text-xs shadow-lg backdrop-blur-sm sm:max-w-72">
+      <span className="font-semibold">{info.legend}</span>
       <div className="grid grid-cols-[repeat(11,1rem)] gap-0.5 sm:grid-cols-[repeat(11,1.125rem)]">
         {LKI_COLORS.map((c, i) => (
           <span key={i} className="h-2 rounded-xs ring-1 ring-black/15 ring-inset" style={{ background: c.bg }} />
         ))}
       </div>
-      <div className="text-muted-foreground flex justify-between">
-        <span>1 Goed</span>
-        <span>11 Zeer slecht</span>
-      </div>
-      <div className="text-muted-foreground flex flex-wrap gap-3.5">
+      {pollutant ? (
+        <div className="text-muted-foreground flex flex-wrap gap-x-2.5 gap-y-0.5 tabular-nums">
+          {categoryRanges(pollutant).map((r) => (
+            <span key={r.name}>
+              {r.name} {r.upTo ? `tot ${r.upTo}` : "daarboven"}
+            </span>
+          ))}
+        </div>
+      ) : (
+        <div className="text-muted-foreground flex justify-between">
+          <span>1 Goed</span>
+          <span>11 Zeer slecht</span>
+        </div>
+      )}
+      <div className="text-muted-foreground flex flex-wrap gap-x-3.5 gap-y-1">
         <span className="inline-flex items-center gap-1.5">
           <i className="size-3 rounded-full border border-[#8C939D] dark:border-[#64748B]" style={{ background: LKI_COLORS[1].bg }} />
           Meetstation
@@ -45,8 +70,14 @@ function Legend() {
         </span>
         <span className="inline-flex items-center gap-1.5">
           <i className="size-3 rounded-full border border-[#8C939D] dark:border-[#64748B]" style={{ background: NO_INDEX_COLOR }} />
-          Geen index
+          {pollutant ? "Niet gemeten" : "Geen index"}
         </span>
+        {layer !== "off" && (
+          <span className="inline-flex items-center gap-1.5">
+            <i className="size-3 rounded-xs opacity-60" style={{ background: `linear-gradient(90deg, ${LKI_COLORS[2].bg}, ${LKI_COLORS[4].bg})` }} />
+            Gebied: berekend door het RIVM
+          </span>
+        )}
       </div>
     </div>
   );
@@ -61,6 +92,9 @@ export function AirMap({ stations, styles }: Props) {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [overviewOpen, setOverviewOpen] = useState(false);
   const [place, setPlace] = useState<Place | null>(null);
+  const mapLayer = useMapLayer();
+  const [probe, setProbe] = useState<{ longitude: number; latitude: number } | null>(null);
+  const area: AreaLayer | null = mapLayer === "off" ? null : mapLayer;
   const selected = stations.find((s) => s.id === selectedId) ?? null;
   const panelOpen = selected !== null || overviewOpen;
   const newestCitizen = useMemo(
@@ -72,10 +106,18 @@ export function AirMap({ stations, styles }: Props) {
     [stations],
   );
 
+  function chooseLayer(layer: MapLayer) {
+    setMapLayer(layer);
+    if (layer === "off") setProbe(null);
+  }
+
   // A station replaces the overview, so closing it returns to the full map.
   function selectStation(id: number | null) {
     setSelectedId(id);
-    if (id !== null) setOverviewOpen(false);
+    if (id !== null) {
+      setOverviewOpen(false);
+      setProbe(null);
+    }
   }
 
   return (
@@ -105,7 +147,15 @@ export function AirMap({ stations, styles }: Props) {
           pitchWithRotate={false}
           attributionControl={false}
         >
-          <StationLayer stations={stations} selectedId={selectedId} onSelect={selectStation} />
+          <RivmLayer layer={area} />
+          <StationLayer
+            stations={stations}
+            colorBy={area ?? "lki"}
+            selectedId={selectedId}
+            onSelect={selectStation}
+            // With the area layer on, a click next to the dots shows RIVM's value there.
+            onMapClick={(lngLat) => setProbe(area ? { longitude: lngLat.lng, latitude: lngLat.lat } : null)}
+          />
           {/* Just under the header row, right-aligned with its buttons (px-6). */}
           <MapControls
             position="top-right"
@@ -131,27 +181,42 @@ export function AirMap({ stations, styles }: Props) {
               </MarkerContent>
             </MapMarker>
           )}
-        </Map>
-        <Legend />
-        {/* Above the legend on phones, where the legend spans the full width. */}
-        <div className="absolute right-3 bottom-28 z-10 flex gap-2 sm:bottom-8 lg:right-[calc(var(--panel)+0.75rem)]">
-          <DataInfo stations={stations} />
-          {!overviewOpen && (
-            <Button
-              variant="outline"
-              onClick={() => {
-                setSelectedId(null);
-                setOverviewOpen(true);
-              }}
-              className="bg-card dark:bg-card h-10 gap-2 px-3.5 shadow-lg"
+          {probe && area && (
+            <MapPopup
+              key={`${probe.longitude},${probe.latitude}`}
+              longitude={probe.longitude}
+              latitude={probe.latitude}
+              closeButton
+              closeOnClick={false}
+              onClose={() => setProbe(null)}
             >
-              <ChartBarIcon />
-              Overzicht Nederland
-            </Button>
+              <PointValue longitude={probe.longitude} latitude={probe.latitude} layer={area} />
+            </MapPopup>
           )}
+        </Map>
+        {/* Legend bottom left, buttons bottom right; on phones the buttons sit above the full-width legend. */}
+        <div className="pointer-events-none absolute right-3 bottom-4 left-4 z-10 flex flex-col-reverse items-start gap-2 sm:flex-row sm:items-end sm:justify-between lg:right-[calc(var(--panel)+0.75rem)]">
+          <Legend layer={mapLayer} />
+          <div className="pointer-events-auto flex gap-2 self-end sm:mb-4">
+            <LayerMenu value={mapLayer} onChange={chooseLayer} />
+            <DataInfo stations={stations} />
+            {!overviewOpen && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSelectedId(null);
+                  setOverviewOpen(true);
+                }}
+                className="bg-card dark:bg-card h-10 gap-2 px-3.5 shadow-lg"
+              >
+                <ChartBarIcon />
+                Overzicht Nederland
+              </Button>
+            )}
+          </div>
         </div>
         <div className="text-muted-foreground bg-card/80 absolute right-2 bottom-1.5 z-10 rounded px-1.5 text-[0.6875rem] lg:right-[calc(var(--panel)+0.5rem)]">
-          OpenFreeMap · © OpenMapTiles · © OpenStreetMap · Metingen: Luchtmeetnet, RIVM Samen Meten
+          OpenFreeMap · © OpenMapTiles · © OpenStreetMap · Metingen: Luchtmeetnet, RIVM Samen Meten{area && " · Kaart: RIVM, luchtmeetnet.nl"}
         </div>
       </div>
       {panelOpen && (
