@@ -97,7 +97,7 @@ export function LayerPicker({
           </Button>
         </PopoverContent>
       </Popover>
-      <LayerGuide open={guideOpen} onOpenChange={setGuideOpen} value={value} onChange={onChange} />
+      <LayerGuide open={guideOpen} onOpenChange={setGuideOpen} />
     </>
   );
 }
