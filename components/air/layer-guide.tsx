@@ -26,7 +26,11 @@ type Explanation = { what: string; effect: string; high?: string; tip: string };
 
 // Short background per layer, same health order as MAP_LAYERS.
 const EXPLANATIONS: Partial<Record<MapLayer, Explanation>> = {
-  lki: { what: "Alle stoffen samen; de slechtste telt.", effect: "Advies per niveau.", tip: "Goede eerste keuze." },
+  lki: {
+    what: "De stof die het slechtst scoort, bepaalt de index.",
+    effect: "Advies per niveau.",
+    tip: "Goede eerste keuze. De index gaat over dit uur; op lange termijn tellen PM2,5 en NO₂ het zwaarst.",
+  },
   pm25: {
     what: "Kleine deeltjes uit verbranding en landbouw.",
     effect: "Komt diep in longen en bloed. Hart, vaten en longen.",

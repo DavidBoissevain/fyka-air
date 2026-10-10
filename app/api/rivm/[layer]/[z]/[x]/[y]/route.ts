@@ -1,7 +1,8 @@
 import { fetchTile, isAreaLayer, tileInNetherlands } from "@/lib/rivm-map";
 
-// RIVM refreshes the map hourly; cache tiles briefly in the browser and on the CDN.
-const CACHED = "public, max-age=300, s-maxage=600, stale-while-revalidate=600";
+// The map's tile URLs carry RIVM's map version (/api/rivm/version), and a new
+// hour gets a new URL, so a tile can be cached for the whole hour.
+const CACHED = "public, max-age=3600, s-maxage=3600";
 
 export async function GET(_request: Request, { params }: RouteContext<"/api/rivm/[layer]/[z]/[x]/[y]">) {
   const { layer, z: zParam, x: xParam, y: yParam } = await params;

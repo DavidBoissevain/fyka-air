@@ -44,7 +44,7 @@ function dotIndex(station: StationReading, colorBy: Props["colorBy"]) {
 }
 
 // Official stations as large LKI-coloured dots, citizen sensors as small dots
-// underneath, both with a thin grey outline. Higher values are drawn on top,
+// underneath (grey on the LKI), both with a thin grey outline. Higher values are drawn on top,
 // so problem spots stay visible in dense areas.
 export function StationLayer({ stations, colorBy, selectedId, onSelect, onMapClick }: Props) {
   const { map, isLoaded, resolvedTheme } = useMap();
@@ -54,7 +54,9 @@ export function StationLayer({ stations, colorBy, selectedId, onSelect, onMapCli
     () => ({
       type: "FeatureCollection",
       features: stations.map((s) => {
-        const index = dotIndex(s, colorBy);
+        // A citizen sensor's LKI covers fine dust only, so on the LKI it's grey,
+        // like a pollutant it doesn't measure: only complete indices get a colour (decision #30).
+        const index = colorBy === "lki" && s.kind === "citizen" ? null : dotIndex(s, colorBy);
         return {
           type: "Feature",
           geometry: { type: "Point", coordinates: [s.longitude, s.latitude] },

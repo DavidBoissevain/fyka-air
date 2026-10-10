@@ -205,7 +205,7 @@ button { font: inherit; color: inherit; }
 .legend .kinds { display: flex; gap: 14px; flex-wrap: wrap; color: var(--muted); }
 .legend .kinds span { display: inline-flex; align-items: center; gap: 6px; }
 .k-station { width: 12px; height: 12px; border-radius: 50%; background: #2F74F0; box-shadow: 0 0 0 2px var(--map-halo), 0 0 0 3px var(--map-border); }
-.k-sensor { width: 7px; height: 7px; border-radius: 50%; background: #2F74F0; opacity: 0.85; }
+.k-sensor { width: 7px; height: 7px; border-radius: 50%; background: #70757F; opacity: 0.85; }
 .attrib {
   position: absolute; right: 8px; bottom: 6px; z-index: 2;
   font-size: 0.6875rem; color: var(--map-label);
@@ -715,7 +715,7 @@ footer { font-size: var(--t-xs); color: var(--muted); display: grid; gap: 4px; m
     <div class="cols-2">
       <div class="sheet">
         <h3>Official or citizen</h3>
-        <p class="lead">Official stations are large dots with a halo. Citizen sensors are small dots without one. The badge in the panel names the source in words.</p>
+        <p class="lead">Official stations are large dots, citizen sensors small ones, both with a thin grey outline. On the index map, citizen sensors are grey: they only measure fine dust, so they have no complete index. The badge in the panel names the source in words.</p>
       </div>
       <div class="sheet">
         <h3>Calibrated first, raw on request</h3>
@@ -1063,7 +1063,8 @@ footer { font-size: var(--t-xs); color: var(--muted); display: grid; gap: 4px; m
   function fc(list) {
     return {
       type: "FeatureCollection",
-      features: list.map(function (s) { return { type: "Feature", properties: { id: s.id, color: LKI[s.lki - 1].c }, geometry: { type: "Point", coordinates: [s.lon, s.lat] } }; })
+      // Citizen sensors have a fine-dust-only index, so they are grey on the index map (decision #30).
+      features: list.map(function (s) { return { type: "Feature", properties: { id: s.id, color: s.kind === "sensor" ? "#70757F" : LKI[s.lki - 1].c }, geometry: { type: "Point", coordinates: [s.lon, s.lat] } }; })
     };
   }
   function select(id, fly) {

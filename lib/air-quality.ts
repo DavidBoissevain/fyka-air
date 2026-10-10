@@ -102,6 +102,16 @@ export function subIndex(quantity: BandQuantity, value: number | undefined | nul
   return i === -1 ? 11 : i + 1;
 }
 
+// RIVM's continuous sub-index: linear within the band, so O3 54.8 in band
+// 40–60 gives 3.74. The open top class counts as 11.
+export function continuousSubIndex(quantity: BandQuantity, value: number) {
+  const edges = [0, ...SUB_INDEX_EDGES[quantity]];
+  const i = edges.findIndex((edge) => value < edge);
+  if (i === -1) return 11;
+  if (i === 0) return 0;
+  return i - 1 + (value - edges[i - 1]) / (edges[i] - edges[i - 1]);
+}
+
 // RIVM's map LKI is continuous (3.74); Luchtmeetnet rounds it up to the index.
 export function lkiIndexFromContinuous(value: number | undefined | null) {
   if (value == null || !Number.isFinite(value) || value < 0) return null;
@@ -122,7 +132,7 @@ export const MAP_LAYERS = [
     id: "lki",
     label: "Luchtkwaliteitsindex",
     tag: "Totaalbeeld",
-    hint: "Begin hier: alle stoffen samen, met advies per niveau.",
+    hint: "Begin hier: de stof die het slechtst scoort, bepaalt de index.",
     legend: "Luchtkwaliteitsindex",
   },
   {

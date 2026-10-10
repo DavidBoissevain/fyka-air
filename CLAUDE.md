@@ -39,6 +39,7 @@ Before building or changing any UI, follow the Fyka Air huisstijl in [docs/desig
 - Freshness, citizen sensors: their calibrated values arrive about 2 hours late, so shift the windows by 2 hours. Up to 3 hours is normal; amber when the sensor is behind the newest Samen Meten hour on the map or 3 hours or older; over 5 hours it leaves the map (decision #25).
 - Show calibrated values by default. Raw values appear next to them on request, never instead of them.
 - On the map, official stations are large dots and citizen sensors are small dots, both with a thin grey outline (`LKI_OUTLINE`), not a white halo.
+- A dot gets a colour only when it has a complete value for the chosen layer. Otherwise it is grey (`#70757F`): stations that don't measure the chosen pollutant, and on the index layer citizen sensors, whose index covers fine dust only (decision #30).
 - Charts show the WHO guideline value as a dashed reference line.
 - Copy is plain Dutch: short sentences, everyday words, advice people can act on. No raw timestamps or internal names in the UI.
 

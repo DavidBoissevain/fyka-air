@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, type ReactNode } from "react";
-import { InfoIcon } from "lucide-react";
+import { ArrowUpRightIcon, InfoIcon } from "lucide-react";
 
 import { AirMark } from "@/components/air-mark";
 import { CoffeeIcon, GithubIcon } from "@/components/brand-icons";
@@ -138,6 +138,20 @@ export function DataInfo({ stations, className }: { stations: StationReading[]; 
                 luchtmeetnet.nl
               </a>
               .
+            </p>
+          </section>
+
+          {/* Which dots get a colour on the index map (decision #30); the details are on their own page. */}
+          <section className="grid gap-1.5 rounded-lg border p-3.5">
+            <h3 className="font-semibold">Kleur van de stippen</h3>
+            <p className="text-muted-foreground">
+              Op de indexkaart krijgt een stip alleen een kleur als de index alle stoffen meeneemt. Burgersensoren meten
+              alleen fijnstof en zijn daar grijs.{" "}
+              <a href="/over-de-index" target="_blank" rel="noopener" className={cn(linkClass, "inline-flex items-center gap-0.5")}>
+                Meer over de index
+                <ArrowUpRightIcon className="size-3.5" aria-hidden />
+                <span className="sr-only">(opent in een nieuw tabblad)</span>
+              </a>
             </p>
           </section>
         </div>

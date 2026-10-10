@@ -70,7 +70,8 @@ function Legend({ layer }: { layer: MapLayer }) {
         </span>
         <span className="inline-flex items-center gap-1.5">
           <i className="size-3 rounded-full border border-[#8C939D] dark:border-[#64748B]" style={{ background: NO_INDEX_COLOR }} />
-          {pollutant ? "Niet gemeten" : "Geen index"}
+          {/* Grey: no (complete) value for this map, e.g. citizen sensors on the LKI (decision #30). */}
+          {pollutant ? "Niet gemeten" : "Geen volledige index"}
         </span>
         {layer !== "off" && (
           <span className="inline-flex items-center gap-1.5">

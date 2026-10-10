@@ -2,6 +2,8 @@
 // hour on a 125 m grid from official measurements plus a road model. We
 // proxy it (app/api/rivm) and restyle it in our LKI colours with SLD_BODY.
 // See TECHNICAL.md, "RIVM model maps" and decision #26.
+import { createHash } from "node:crypto";
+
 import { BAND_QUANTITIES, LKI_COLORS, SUB_INDEX_EDGES, type AreaLayer } from "@/lib/air-quality";
 
 const WMS = "https://data.rivm.nl/geo/lucht/wms";
@@ -77,6 +79,31 @@ export async function fetchTile(layer: AreaLayer, z: number, x: number, y: numbe
     throw new Error(`RIVM WMS ${res.status}: ${(await res.text()).slice(0, 200)}`);
   }
   return res.arrayBuffer();
+}
+
+// RIVM's map has no timestamp and changes once an hour at a moment we can't
+// predict, so the version is a hash of the whole country at about 2 km per
+// pixel in RIVM's own fine-stepped style. It goes into the tile URL, so all
+// tiles on screen come from the same hour.
+export async function fetchVersion(layer: AreaLayer) {
+  const url = new URL(WMS);
+  url.search = new URLSearchParams({
+    service: "WMS",
+    version: "1.1.1",
+    request: "GetMap",
+    layers: `lucht:actueel_${layer}`,
+    styles: "",
+    format: "image/png",
+    srs: "EPSG:3857",
+    bbox: [mercX(NL.minLon), mercY(NL.minLat), mercX(NL.maxLon), mercY(NL.maxLat)].join(","),
+    width: "256",
+    height: "256",
+  }).toString();
+  const res = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS) });
+  if (!res.ok || !res.headers.get("content-type")?.startsWith("image/png")) {
+    throw new Error(`RIVM WMS ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  }
+  return createHash("sha1").update(Buffer.from(await res.arrayBuffer())).digest("hex").slice(0, 12);
 }
 
 export type PointValues = Record<AreaLayer, number | null>;

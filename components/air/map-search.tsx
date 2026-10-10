@@ -172,7 +172,11 @@ export function MapSearch({ stations, onSelectStation, onSelectPlace, onClear, c
         <div id={listId} role="listbox" className="bg-popover mt-1.5 grid rounded-lg border p-1 shadow-lg">
           {items.map((item, i) => {
             const isStation = item.kind === "station";
-            const color = isStation ? lkiColor(lkiIndex(item.station.readings.lki?.value))?.bg ?? NO_INDEX_COLOR : null;
+            // Citizen sensors are grey, as on the LKI map (decision #30).
+            const color =
+              isStation && item.station.kind === "professional"
+                ? lkiColor(lkiIndex(item.station.readings.lki?.value))?.bg ?? NO_INDEX_COLOR
+                : NO_INDEX_COLOR;
             return (
               <div
                 key={isStation ? `s${item.station.id}` : item.place.id}
@@ -189,7 +193,7 @@ export function MapSearch({ stations, onSelectStation, onSelectPlace, onClear, c
                 )}
               >
                 {isStation ? (
-                  <span className="size-2.5 justify-self-center rounded-full ring-1 ring-black/25" style={{ background: color! }} />
+                  <span className="size-2.5 justify-self-center rounded-full ring-1 ring-black/25" style={{ background: color }} />
                 ) : (
                   <MapPinIcon className="text-muted-foreground size-4" aria-hidden />
                 )}

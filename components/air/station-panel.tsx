@@ -42,7 +42,8 @@ export function Freshness({ measuredAt, citizen }: { measuredAt: string; citizen
   );
 }
 
-function LkiSummary({ value, citizen }: { value: number | undefined; citizen: boolean }) {
+// `noIndex` explains why there is no index, if there is none.
+function LkiSummary({ value, noIndex }: { value: number | undefined; noIndex: string }) {
   const index = lkiIndex(value);
   const color = lkiColor(index);
   const category = index ? lkiCategory(index) : null;
@@ -58,11 +59,7 @@ function LkiSummary({ value, citizen }: { value: number | undefined; citizen: bo
       <div className="grid min-w-0 gap-0.5">
         <strong className="text-lg font-semibold">{category ? category.name : "Geen index"}</strong>
         <span className="text-muted-foreground text-sm">
-          {category
-            ? category.advice
-            : citizen
-              ? "Nog geen index: daarvoor zijn minstens 12 uur metingen nodig."
-              : "Dit station meet niet genoeg stoffen voor een luchtkwaliteitsindex."}
+          {category ? category.advice : noIndex}
         </span>
       </div>
     </div>
@@ -73,11 +70,13 @@ function PollutantRow({ quantity, station }: { quantity: Quantity; station: Stat
   const reading = station.readings[quantity];
   const who = WHO_GUIDELINE[quantity];
   if (!reading) {
+    // Luchtmeetnet's components use the same names in capitals (PM25, NO2, O3).
+    const hasSensor = station.details.components?.includes(quantity.toUpperCase());
     return (
       <div className="text-muted-foreground grid grid-cols-[4.25rem_minmax(0,1fr)_7rem] items-center gap-3 border-t py-2.5 text-sm">
         <span>{QUANTITY_NAMES[quantity]}</span>
         <span />
-        <span className="text-right">niet gemeten</span>
+        <span className="text-right">{hasSensor ? "geen meting" : "niet gemeten"}</span>
       </div>
     );
   }
@@ -120,6 +119,18 @@ export function StationDetails({ station, place, newestCitizen, onClose }: Detai
   const quantities = citizen
     ? (["pm25", "pm10", "no2", "nh3"] as Quantity[]).filter((q) => station.readings[q])
     : [...POLLUTANTS, ...(["nh3"] as Quantity[]).filter((q) => station.readings[q])];
+  const lki = station.readings.lki;
+  const indexBehind = lki !== undefined && Date.parse(lki.measured_at) < Date.parse(station.measured_at);
+  // The view drops an official index that leaves out ozone: a silent ozone sensor
+  // (decision #31), or no ozone estimate from Luchtmeetnet (#30, #33).
+  const ozoneSensor = !citizen && (station.details.components?.includes("O3") ?? false);
+  const noIndex = citizen
+    ? "Nog geen index: daarvoor zijn minstens 12 uur metingen nodig."
+    : ozoneSensor && !station.readings.o3
+      ? "De ozonmeter van dit station geeft nu geen waarden. Zonder ozon is de index niet compleet."
+      : station.readings.pm25 || station.readings.pm10 || station.readings.no2
+        ? "Luchtmeetnet rekent voor dit station nu geen ozon mee. Zonder ozon is de index niet compleet."
+        : "Dit station meet niet genoeg stoffen voor een luchtkwaliteitsindex.";
   return (
     <div className="grid content-start gap-5">
       <div className="grid gap-1.5">
@@ -159,11 +170,22 @@ export function StationDetails({ station, place, newestCitizen, onClose }: Detai
       </div>
 
       <div className="grid gap-2">
-        <LkiSummary value={station.readings.lki?.value} citizen={citizen} />
+        <LkiSummary value={station.readings.lki?.value} noIndex={noIndex} />
         {citizen && (
           <p className="text-muted-foreground text-xs">
             Index op basis van fijnstof (24-uursgemiddelde). Officiële meetstations rekenen ook stikstofdioxide en
-            ozon mee, en kunnen daardoor hoger uitkomen.
+            ozon mee, en kunnen daardoor hoger uitkomen. Daarom is de stip op de indexkaart grijs.
+          </p>
+        )}
+        {/* Decision #30: Luchtmeetnet estimates ozone for stations without a sensor, and the view
+            skips an index that doesn't include it yet. */}
+        {!citizen && lki && (!ozoneSensor || indexBehind) && (
+          <p className="text-muted-foreground text-xs">
+            {!ozoneSensor &&
+              "Dit station meet geen ozon. In de index rekent Luchtmeetnet met een schatting van de ozon op deze plek."}
+            {!ozoneSensor && indexBehind && " "}
+            {indexBehind &&
+              `De index is van ${formatTime(lki.measured_at)}. Die voor het nieuwste uur is nog niet compleet.`}
           </p>
         )}
       </div>

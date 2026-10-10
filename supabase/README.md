@@ -4,7 +4,7 @@ This folder holds the database schema ([migrations/](migrations/)) and the Edge 
 
 ## Collector: `collect-luchtmeetnet`
 
-`pg_cron` calls this function every hour at :15. It does three things:
+`pg_cron` calls this function every 10 minutes, so a newly published hour shows up soon after Luchtmeetnet publishes it. It does three things:
 
 1. Fetches the last 3 hours of Luchtmeetnet measurements and LKI values.
 2. Upserts them through `public.ingest_measurements`.
