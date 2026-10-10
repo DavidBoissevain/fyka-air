@@ -40,25 +40,33 @@ function Legend({ layer }: { layer: MapLayer }) {
   return (
     <div className="bg-card/95 pointer-events-auto grid max-w-full gap-2 rounded-lg border px-3 py-2.5 text-xs shadow-lg backdrop-blur-sm sm:max-w-72">
       <span className="font-semibold">{info.legend}</span>
-      <div className="grid grid-cols-[repeat(11,1rem)] gap-0.5 sm:grid-cols-[repeat(11,1.125rem)]">
-        {LKI_COLORS.map((c, i) => (
-          <span key={i} className="h-2 rounded-xs ring-1 ring-black/15 ring-inset" style={{ background: c.bg }} />
-        ))}
-      </div>
-      {pollutant ? (
-        <div className="text-muted-foreground flex flex-wrap gap-x-2.5 gap-y-0.5 tabular-nums">
-          {categoryRanges(pollutant).map((r) => (
-            <span key={r.name}>
-              {r.name} {r.upTo ? `tot ${r.upTo}` : "daarboven"}
-            </span>
+      <div className="grid gap-1 [--cell:1rem] sm:[--cell:1.125rem]">
+        <div className="grid grid-cols-[repeat(11,var(--cell))] gap-0.5">
+          {LKI_COLORS.map((c, i) => (
+            <span key={i} className="h-2 rounded-xs ring-1 ring-black/15 ring-inset" style={{ background: c.bg }} />
           ))}
         </div>
-      ) : (
-        <div className="text-muted-foreground flex justify-between">
-          <span>1 Goed</span>
-          <span>11 Zeer slecht</span>
-        </div>
-      )}
+        {pollutant && (
+          // Category limits in µg/m³, each under the gap where the next category starts.
+          <div className="text-muted-foreground relative h-3.5 tabular-nums">
+            {categoryRanges(pollutant)
+              .filter((r) => r.upTo !== null)
+              .map((r) => (
+                <span
+                  key={r.name}
+                  className="absolute top-0 -translate-x-1/2 leading-none"
+                  style={{ left: `calc(${r.to} * (var(--cell) + 0.125rem) - 0.0625rem)` }}
+                >
+                  {r.upTo}
+                </span>
+              ))}
+          </div>
+        )}
+      </div>
+      <div className="text-muted-foreground flex justify-between">
+        <span>{pollutant ? "Goed" : "1 Goed"}</span>
+        <span>{pollutant ? "Zeer slecht" : "11 Zeer slecht"}</span>
+      </div>
       <div className="text-muted-foreground flex flex-wrap gap-x-3.5 gap-y-1">
         <span className="inline-flex items-center gap-1.5">
           <i className="size-3 rounded-full border border-[#8C939D] dark:border-[#64748B]" style={{ background: LKI_COLORS[1].bg }} />

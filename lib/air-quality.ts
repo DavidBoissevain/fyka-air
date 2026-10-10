@@ -118,10 +118,10 @@ export function lkiIndexFromContinuous(value: number | undefined | null) {
   return Math.min(11, Math.max(1, Math.ceil(value)));
 }
 
-// Upper bound per category, for "Goed tot 20 · Matig tot 50 · …".
+// Upper bound per category, with its last index (the legend tick sits after that step).
 export function categoryRanges(quantity: BandQuantity) {
   const edges = SUB_INDEX_EDGES[quantity];
-  return LKI_CATEGORIES.map((c) => ({ name: c.name, upTo: c.to < 11 ? edges[c.to - 1] : null }));
+  return LKI_CATEGORIES.map((c) => ({ name: c.name, to: c.to, upTo: c.to < 11 ? edges[c.to - 1] : null }));
 }
 
 // What the map colours by: the area layer (RIVM, decision #26) and the dots.
