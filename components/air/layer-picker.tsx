@@ -13,8 +13,8 @@ import { cn } from "@/lib/utils";
 
 /**
  * Chooses what the map colours by (decisions #26–#28): a labelled button that
- * always names the active layer, opening a panel ranked by importance for
- * health, with a short line per layer and a separate guide for more.
+ * always names the active layer, opening a short list ranked by importance for
+ * health, with a separate guide for the explanation.
  */
 export function LayerPicker({
   value,
@@ -46,43 +46,34 @@ export function LayerPicker({
           <span className="truncate font-semibold">{active.label}</span>
           <ChevronDownIcon className="text-muted-foreground" />
         </PopoverTrigger>
-        <PopoverContent align="start" className="max-h-(--available-height) w-[min(24rem,calc(100vw-2rem))] gap-3 overflow-y-auto p-3">
-          <div className="grid gap-1">
-            <span className="text-muted-foreground px-1 text-xs">Belangrijkste voor je gezondheid bovenaan</span>
-            <RadioGroup
-              value={value}
-              onValueChange={(next) => {
-                onChange(next as MapLayer);
-                setOpen(false);
-              }}
-              aria-label="Kaartlaag"
-              className="gap-1"
-            >
-              {MAP_LAYERS.map((layer) => (
-                <label
-                  key={layer.id}
-                  className={cn(
-                    "hover:bg-muted flex cursor-pointer items-start gap-3 rounded-md px-2.5 py-2",
-                    layer.id === "off" && "mt-1 border-t pt-3",
-                    layer.id === value && "bg-brand-soft hover:bg-brand-soft",
-                  )}
-                >
-                  <RadioGroupItem value={layer.id} className="mt-0.5" />
-                  <span className="grid min-w-0 gap-0.5">
-                    <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                      <span className="font-medium">{layer.label}</span>
-                      {layer.tag && (
-                        <Badge variant="outline" className="text-muted-foreground font-normal">
-                          {layer.tag}
-                        </Badge>
-                      )}
-                    </span>
-                    <span className="text-muted-foreground text-xs">{layer.hint}</span>
-                  </span>
-                </label>
-              ))}
-            </RadioGroup>
-          </div>
+        <PopoverContent align="start" className="max-h-(--available-height) w-[min(18rem,calc(100vw-2rem))] gap-2 overflow-y-auto p-2">
+          <RadioGroup
+            value={value}
+            onValueChange={(next) => {
+              onChange(next as MapLayer);
+              setOpen(false);
+            }}
+            aria-label="Kaartlaag"
+            className="gap-0.5"
+          >
+            {MAP_LAYERS.map((layer) => (
+              <label
+                key={layer.id}
+                className={cn(
+                  "hover:bg-muted flex cursor-pointer items-center gap-3 rounded-md px-2.5 py-2",
+                  layer.id === value && "bg-brand-soft hover:bg-brand-soft",
+                )}
+              >
+                <RadioGroupItem value={layer.id} />
+                <span className="min-w-0 flex-1 font-medium">{layer.label}</span>
+                {layer.tag && (
+                  <Badge variant="outline" className="text-muted-foreground font-normal">
+                    {layer.tag}
+                  </Badge>
+                )}
+              </label>
+            ))}
+          </RadioGroup>
 
           <Button
             variant="ghost"
@@ -93,7 +84,7 @@ export function LayerPicker({
             }}
           >
             <CircleHelpIcon />
-            Welke kaart kies ik? Uitleg bij astma, COPD en meer
+            Welke kaart kies ik?
           </Button>
         </PopoverContent>
       </Popover>

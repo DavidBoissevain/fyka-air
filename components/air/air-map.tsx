@@ -18,7 +18,6 @@ import {
   MAP_LAYERS,
   NO_INDEX_COLOR,
   categoryRanges,
-  type AreaLayer,
   type MapLayer,
   type StationReading,
 } from "@/lib/air-quality";
@@ -36,7 +35,7 @@ const NL_BOUNDS: [[number, number], [number, number]] = [
 
 function Legend({ layer }: { layer: MapLayer }) {
   const info = MAP_LAYERS.find((l) => l.id === layer) ?? MAP_LAYERS[0];
-  const pollutant = layer === "lki" || layer === "off" ? null : layer;
+  const pollutant = layer === "lki" ? null : layer;
   return (
     <div className="bg-card/95 pointer-events-auto grid max-w-full gap-2 rounded-lg border px-3 py-2.5 text-xs shadow-lg backdrop-blur-sm sm:max-w-72">
       <span className="font-semibold">{info.legend}</span>
@@ -81,12 +80,10 @@ function Legend({ layer }: { layer: MapLayer }) {
           {/* Grey: no (complete) value for this map, e.g. citizen sensors on the LKI (decision #30). */}
           {pollutant ? "Niet gemeten" : "Geen volledige index"}
         </span>
-        {layer !== "off" && (
-          <span className="inline-flex items-center gap-1.5">
-            <i className="size-3 rounded-xs opacity-60" style={{ background: `linear-gradient(90deg, ${LKI_COLORS[2].bg}, ${LKI_COLORS[4].bg})` }} />
-            Gebied: berekend door het RIVM
-          </span>
-        )}
+        <span className="inline-flex items-center gap-1.5">
+          <i className="size-3 rounded-xs opacity-60" style={{ background: `linear-gradient(90deg, ${LKI_COLORS[2].bg}, ${LKI_COLORS[4].bg})` }} />
+          Gebied: berekend door het RIVM
+        </span>
       </div>
     </div>
   );
@@ -103,7 +100,6 @@ export function AirMap({ stations, styles }: Props) {
   const [place, setPlace] = useState<Place | null>(null);
   const mapLayer = useMapLayer();
   const [probe, setProbe] = useState<{ longitude: number; latitude: number } | null>(null);
-  const area: AreaLayer | null = mapLayer === "off" ? null : mapLayer;
   const selected = stations.find((s) => s.id === selectedId) ?? null;
   const panelOpen = selected !== null || overviewOpen;
   const newestCitizen = useMemo(
@@ -114,11 +110,6 @@ export function AirMap({ stations, styles }: Props) {
       ),
     [stations],
   );
-
-  function chooseLayer(layer: MapLayer) {
-    setMapLayer(layer);
-    if (layer === "off") setProbe(null);
-  }
 
   // A station replaces the overview, so closing it returns to the full map.
   function selectStation(id: number | null) {
@@ -156,14 +147,14 @@ export function AirMap({ stations, styles }: Props) {
           pitchWithRotate={false}
           attributionControl={false}
         >
-          <RivmLayer layer={area} />
+          <RivmLayer layer={mapLayer} />
           <StationLayer
             stations={stations}
-            colorBy={area ?? "lki"}
+            colorBy={mapLayer}
             selectedId={selectedId}
             onSelect={selectStation}
-            // With the area layer on, a click next to the dots shows RIVM's value there.
-            onMapClick={(lngLat) => setProbe(area ? { longitude: lngLat.lng, latitude: lngLat.lat } : null)}
+            // A click next to the dots shows RIVM's value there.
+            onMapClick={(lngLat) => setProbe({ longitude: lngLat.lng, latitude: lngLat.lat })}
           />
           {/* Just under the header row, right-aligned with its buttons (px-6). */}
           <MapControls
@@ -190,7 +181,7 @@ export function AirMap({ stations, styles }: Props) {
               </MarkerContent>
             </MapMarker>
           )}
-          {probe && area && (
+          {probe && (
             <MapPopup
               key={`${probe.longitude},${probe.latitude}`}
               longitude={probe.longitude}
@@ -199,14 +190,14 @@ export function AirMap({ stations, styles }: Props) {
               closeOnClick={false}
               onClose={() => setProbe(null)}
             >
-              <PointValue longitude={probe.longitude} latitude={probe.latitude} layer={area} />
+              <PointValue longitude={probe.longitude} latitude={probe.latitude} layer={mapLayer} />
             </MapPopup>
           )}
         </Map>
         {/* Under the search box, aligned with the zoom controls on the right. */}
         <LayerPicker
           value={mapLayer}
-          onChange={chooseLayer}
+          onChange={setMapLayer}
           className="absolute top-17 left-6 z-10 max-w-[calc(100%-6.5rem)] md:top-19"
         />
         {/* Legend bottom left, buttons bottom right; on phones the buttons sit above the full-width legend. */}
@@ -230,7 +221,7 @@ export function AirMap({ stations, styles }: Props) {
           </div>
         </div>
         <div className="text-muted-foreground bg-card/80 absolute right-2 bottom-1.5 z-10 rounded px-1.5 text-[0.6875rem] lg:right-[calc(var(--panel)+0.5rem)]">
-          OpenFreeMap · © OpenMapTiles · © OpenStreetMap · Metingen: Luchtmeetnet, RIVM Samen Meten{area && " · Kaart: RIVM, luchtmeetnet.nl"}
+          OpenFreeMap · © OpenMapTiles · © OpenStreetMap · Metingen: Luchtmeetnet, RIVM Samen Meten · Kaart: RIVM, luchtmeetnet.nl
         </div>
       </div>
       {panelOpen && (

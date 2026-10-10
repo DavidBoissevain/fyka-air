@@ -125,54 +125,50 @@ export function categoryRanges(quantity: BandQuantity) {
 }
 
 // What the map colours by: the area layer (RIVM, decision #26) and the dots.
-// "off" hides the area and colours the dots by LKI. Ordered by importance for
+// Ordered by importance for
 // health (decision #28): the overall index first, then PM2.5, NO2, O3, PM10.
+// tag: the menu's only label, "Nu" for the index and "Lange termijn" for the
+// pollutants that weigh most for health; hint: the guide's one line.
 export const MAP_LAYERS = [
   {
     id: "lki",
     label: "Luchtkwaliteitsindex",
-    tag: "Totaalbeeld",
-    hint: "Begin hier: de stof die het slechtst scoort, bepaalt de index.",
+    tag: "Nu",
+    hint: "Begin hier om de kwaliteit van nu te bepalen: de stof die het slechtst scoort, bepaalt de index.",
     legend: "Luchtkwaliteitsindex",
   },
   {
     id: "pm25",
     label: "Fijnstof (PM2,5)",
-    tag: "Grootste gezondheidsrisico",
+    tag: "Lange termijn",
     hint: "Kleine deeltjes die diep in je longen en bloed komen.",
     legend: "Fijnstof PM2,5 per uur, in µg/m³",
   },
   {
     id: "no2",
     label: "Stikstofdioxide (NO₂)",
-    tag: "Verkeer",
+    tag: "Lange termijn",
     hint: "Vooral langs drukke wegen. Belangrijk bij astma.",
     legend: "Stikstofdioxide NO₂ per uur, in µg/m³",
   },
   {
     id: "o3",
     label: "Ozon (O₃)",
-    tag: "Zomersmog",
+    tag: null,
     hint: "Hoog op warme, zonnige middagen. Let op bij buiten sporten.",
     legend: "Ozon O₃ per uur, in µg/m³",
   },
   {
     id: "pm10",
     label: "Fijnstof (PM10)",
-    tag: "Grover stof",
+    tag: null,
     hint: "Prikkelt neus, keel en luchtwegen.",
     legend: "Fijnstof PM10 per uur, in µg/m³",
   },
-  {
-    id: "off",
-    label: "Alleen meetpunten",
-    tag: null,
-    hint: "Alleen de metingen, zonder gekleurd gebied.",
-    legend: "Luchtkwaliteitsindex",
-  },
 ] as const;
 export type MapLayer = (typeof MAP_LAYERS)[number]["id"];
-export type AreaLayer = Exclude<MapLayer, "off">;
+// Every map layer has an RIVM area layer under the dots.
+export type AreaLayer = MapLayer;
 
 // WHO 2021 guideline values in µg/m³ (24-hour mean; 8-hour mean for O₃).
 export const WHO_GUIDELINE: Partial<Record<Quantity, number>> = {

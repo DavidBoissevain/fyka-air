@@ -1,75 +1,36 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
+import { ClockIcon, HeartPulseIcon } from "lucide-react";
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { MAP_LAYERS, QUANTITY_NAMES, type BandQuantity, type MapLayer } from "@/lib/air-quality";
+import { LKI_COLORS, MAP_LAYERS, QUANTITY_NAMES, type BandQuantity } from "@/lib/air-quality";
 import { cn } from "@/lib/utils";
 
-// Pollutant columns in health order, as in MAP_LAYERS (decision #28).
-const POLLUTANTS: BandQuantity[] = ["pm25", "no2", "o3", "pm10"];
-
-type Level = 1 | 2 | 3;
-const LEVEL_NAMES: Record<Level, string> = { 1: "licht", 2: "matig", 3: "sterk" };
-
-// How much each pollutant matters per group. A simplified reading of
-// well-established links (WHO, EEA), not a medical score.
-const GROUPS: { who: string; levels: Record<BandQuantity, Level> }[] = [
-  { who: "Astma", levels: { pm25: 2, no2: 3, o3: 3, pm10: 2 } },
-  { who: "COPD, longziekte", levels: { pm25: 3, no2: 1, o3: 2, pm10: 1 } },
-  { who: "Hart en vaten", levels: { pm25: 3, no2: 1, o3: 1, pm10: 1 } },
-  { who: "Kinderen", levels: { pm25: 3, no2: 3, o3: 1, pm10: 1 } },
-  { who: "Ouderen", levels: { pm25: 3, no2: 1, o3: 2, pm10: 1 } },
-  { who: "Buiten sporten", levels: { pm25: 1, no2: 2, o3: 3, pm10: 1 } },
+// How much each pollutant weighs for long-term health, as a bar length. A
+// simplified reading of well-established links (WHO 2021, EEA burden
+// estimates), not a medical score. PM10 is short because it largely overlaps PM2.5.
+const LONG_TERM: { quantity: BandQuantity; weight: number; label: string }[] = [
+  { quantity: "pm25", weight: 1, label: "zwaarst" },
+  { quantity: "no2", weight: 0.55, label: "zwaar" },
+  { quantity: "o3", weight: 0.2, label: "minder" },
+  { quantity: "pm10", weight: 0.2, label: "minder" },
 ];
+const MAIN: BandQuantity[] = ["pm25", "no2"];
 
-type Explanation = { what: string; effect: string; high?: string; tip: string };
-
-// Short background per layer, same health order as MAP_LAYERS.
-const EXPLANATIONS: Partial<Record<MapLayer, Explanation>> = {
-  lki: {
-    what: "De stof die het slechtst scoort, bepaalt de index.",
-    effect: "Advies per niveau.",
-    tip: "Goede eerste keuze. De index gaat over dit uur; op lange termijn tellen PM2,5 en NO₂ het zwaarst.",
-  },
-  pm25: {
-    what: "Kleine deeltjes uit verbranding en landbouw.",
-    effect: "Komt diep in longen en bloed. Hart, vaten en longen.",
-    high: "Winter, windstil, houtstook, vuurwerk.",
-    tip: "Beperk dan zware inspanning buiten.",
-  },
-  no2: {
-    what: "Gas uit vooral dieselverkeer.",
-    effect: "Prikkelt de luchtwegen, verergert astma.",
-    high: "Langs drukke wegen, in de spits.",
-    tip: "Kies rustige straten.",
-  },
-  o3: {
-    what: "Zomersmog, ontstaat in zonlicht.",
-    effect: "Hoesten en benauwd bij inspanning.",
-    high: "Warme, zonnige middagen.",
-    tip: "Sport dan 's ochtends.",
-  },
-  pm10: {
-    what: "Grover stof, inclusief PM2,5.",
-    effect: "Neus, keel en luchtwegen.",
-    high: "Droog, winderig weer, bouw.",
-    tip: "PM2,5 zegt meestal meer.",
-  },
-};
-
-function LevelBlocks({ level, label }: { level: Level; label: string }) {
+function Card({ icon, when, title, children }: { icon: React.ReactNode; when: string; title: string; children: React.ReactNode }) {
   return (
-    <span className="mx-auto flex w-fit gap-0.5 py-1" title={label}>
-      {([1, 2, 3] as const).map((i) => (
-        // steel-500 in light mode: the lighter steel token is under 3:1 against the empty blocks.
-        <i key={i} className={cn("h-2.5 w-3 rounded-xs", i <= level ? "bg-[#5B7BAA] dark:bg-steel" : "bg-muted")} aria-hidden />
-      ))}
-      <span className="sr-only">{label}</span>
-    </span>
+    <section className="grid content-start gap-2 rounded-lg border p-3">
+      <span className="text-muted-foreground inline-flex items-center gap-1.5 text-xs font-medium">
+        {icon}
+        {when}
+      </span>
+      <h3 className="font-semibold leading-tight">{title}</h3>
+      {children}
+    </section>
   );
 }
 
-/** "Welke kaart kies ik?": which pollutant matters for whom, and what each layer means (decision #28). */
+/** "Welke kaart kies ik?": the index for now, PM2.5 and NO2 for long-term health, and one line per layer (decision #28). */
 export function LayerGuide({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -78,87 +39,60 @@ export function LayerGuide({ open, onOpenChange }: { open: boolean; onOpenChange
           <DialogTitle className="text-lg font-semibold">Welke kaart kies ik?</DialogTitle>
         </DialogHeader>
 
-        <section className="grid gap-2">
-          <h3 className="font-semibold">Waar let ik op?</h3>
-          <table className="w-full text-sm">
-            <caption className="sr-only">Hoe belangrijk elke stof is, per groep</caption>
-            <thead>
-              <tr>
-                <th scope="col" className="sr-only">
-                  Groep
-                </th>
-                {POLLUTANTS.map((q) => (
-                  <th key={q} scope="col" className="text-muted-foreground px-1 pb-1 text-center text-xs font-medium">
-                    {QUANTITY_NAMES[q]}
-                  </th>
+        <div className="grid gap-3 text-sm sm:grid-cols-2">
+          <Card icon={<ClockIcon className="size-3.5" aria-hidden />} when="Nu" title="Luchtkwaliteitsindex">
+            <p className="text-muted-foreground">Hoe is de lucht dit uur? Begin hier.</p>
+            <div className="mt-auto grid gap-1 pt-1">
+              <div className="grid grid-cols-11 gap-0.5">
+                {LKI_COLORS.map((c, i) => (
+                  <span key={i} className="h-2 rounded-xs ring-1 ring-black/15 ring-inset" style={{ background: c.bg }} />
                 ))}
-              </tr>
-            </thead>
-            <tbody>
-              {GROUPS.map((g) => (
-                <tr key={g.who} className="border-t">
-                  <th scope="row" className="py-1.5 pr-2 text-left font-medium">
-                    {g.who}
-                  </th>
-                  {POLLUTANTS.map((q) => (
-                    <td key={q} className="px-1">
-                      <LevelBlocks
-                        level={g.levels[q]}
-                        label={`${g.who}, ${QUANTITY_NAMES[q]}: ${LEVEL_NAMES[g.levels[q]]}`}
+              </div>
+              <div className="text-muted-foreground flex justify-between text-xs">
+                <span>Goed</span>
+                <span>Zeer slecht</span>
+              </div>
+            </div>
+          </Card>
+
+          <Card icon={<HeartPulseIcon className="size-3.5" aria-hidden />} when="Op lange termijn" title="PM2,5 en NO₂">
+            <p className="text-muted-foreground">Wat je jaren inademt, telt het zwaarst.</p>
+            <dl className="grid grid-cols-[2.75rem_1fr] items-center gap-x-2 gap-y-1 pt-1 text-xs">
+              {LONG_TERM.map(({ quantity, weight, label }) => {
+                const main = MAIN.includes(quantity);
+                return (
+                  <div key={quantity} className="contents">
+                    <dt className={cn("tabular-nums", main ? "font-semibold" : "text-muted-foreground")}>
+                      {QUANTITY_NAMES[quantity]}
+                    </dt>
+                    <dd>
+                      {/* steel-500 in light mode: the lighter steel token is under 3:1 against the card. */}
+                      <span
+                        className={cn("block h-2 rounded-xs", main ? "bg-[#5B7BAA] dark:bg-steel" : "bg-[#5B7BAA]/30 dark:bg-steel/30")}
+                        style={{ width: `${weight * 100}%` }}
                       />
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <p className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-            {([3, 2, 1] as const).map((level) => (
-              <span key={level} className="inline-flex items-center gap-1.5">
-                <LevelBlocks level={level} label={LEVEL_NAMES[level]} />
-                <span aria-hidden>{LEVEL_NAMES[level]}</span>
-              </span>
+                      <span className="sr-only">{label}</span>
+                    </dd>
+                  </div>
+                );
+              })}
+            </dl>
+          </Card>
+        </div>
+
+        <section className="grid gap-2 text-sm">
+          <h3 className="font-semibold">De kaarten</h3>
+          <dl className="grid gap-x-3 gap-y-1.5 sm:grid-cols-[auto_1fr]">
+            {MAP_LAYERS.map((layer) => (
+              <div key={layer.id} className="contents">
+                <dt className="font-medium">{layer.label}</dt>
+                <dd className="text-muted-foreground mb-1 sm:mb-0">{layer.hint}</dd>
+              </div>
             ))}
-          </p>
+          </dl>
         </section>
 
-        <section className="grid gap-2.5">
-          <h3 className="font-semibold">Per kaart</h3>
-          {MAP_LAYERS.map((layer) => {
-            const text = EXPLANATIONS[layer.id];
-            if (!text) return null;
-            const rows = [
-              ["Wat", text.what],
-              ["Effect", text.effect],
-              ["Hoog bij", text.high],
-              ["Tip", text.tip],
-            ].filter((row): row is [string, string] => Boolean(row[1]));
-            return (
-              <article key={layer.id} className="grid gap-1.5 rounded-lg border p-3 text-sm">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h4 className="font-semibold">{layer.label}</h4>
-                  {layer.tag && (
-                    <Badge variant="outline" className="text-muted-foreground font-normal">
-                      {layer.tag}
-                    </Badge>
-                  )}
-                </div>
-                <dl className="grid grid-cols-[4.5rem_1fr] gap-x-2 gap-y-0.5">
-                  {rows.map(([term, value]) => (
-                    <div key={term} className="contents">
-                      <dt className="text-muted-foreground">{term}</dt>
-                      <dd>{value}</dd>
-                    </div>
-                  ))}
-                </dl>
-              </article>
-            );
-          })}
-        </section>
-
-        <p className="text-muted-foreground text-xs">
-          Algemene informatie, geen medisch advies. Heb je klachten? Overleg met je huisarts of longarts.
-        </p>
+        <p className="text-muted-foreground text-xs">Algemene informatie, geen medisch advies.</p>
       </DialogContent>
     </Dialog>
   );
