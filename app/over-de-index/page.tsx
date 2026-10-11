@@ -114,7 +114,11 @@ export default function OverDeIndex() {
           <p className="text-muted-foreground">
             De index gaat over de lucht van dit uur. Voor je gezondheid op lange termijn tellen vooral fijnstof
             (PM2,5) en stikstofdioxide (NO₂): wat je daarvan jaar in, jaar uit inademt. Ook op een dag met een lage
-            index kan dat spelen.
+            index kan dat spelen. Hoe dat bij jou zit, zie je op de kaart onder{" "}
+            <Link href="/?periode=jaar" className={linkClass}>
+              Jaargemiddelde
+            </Link>
+            .
           </p>
         </section>
 

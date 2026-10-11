@@ -127,41 +127,35 @@ export function categoryRanges(quantity: BandQuantity) {
 // What the map colours by: the area layer (RIVM, decision #26) and the dots.
 // Ordered by importance for
 // health (decision #28): the overall index first, then PM2.5, NO2, O3, PM10.
-// tag: the menu's only label, "Nu" for the index and "Lange termijn" for the
-// pollutants that weigh most for health; hint: the guide's one line.
+// hint: the guide's one line.
 export const MAP_LAYERS = [
   {
     id: "lki",
     label: "Luchtkwaliteitsindex",
-    tag: "Nu",
     hint: "Begin hier om de kwaliteit van nu te bepalen: de stof die het slechtst scoort, bepaalt de index.",
     legend: "Luchtkwaliteitsindex",
   },
   {
     id: "pm25",
     label: "Fijnstof (PM2,5)",
-    tag: "Lange termijn",
     hint: "Kleine deeltjes die diep in je longen en bloed komen.",
     legend: "Fijnstof PM2,5 per uur, in µg/m³",
   },
   {
     id: "no2",
     label: "Stikstofdioxide (NO₂)",
-    tag: "Lange termijn",
     hint: "Vooral langs drukke wegen. Belangrijk bij astma.",
     legend: "Stikstofdioxide NO₂ per uur, in µg/m³",
   },
   {
     id: "o3",
     label: "Ozon (O₃)",
-    tag: null,
     hint: "Hoog op warme, zonnige middagen. Let op bij buiten sporten.",
     legend: "Ozon O₃ per uur, in µg/m³",
   },
   {
     id: "pm10",
     label: "Fijnstof (PM10)",
-    tag: null,
     hint: "Prikkelt neus, keel en luchtwegen.",
     legend: "Fijnstof PM10 per uur, in µg/m³",
   },
@@ -169,6 +163,126 @@ export const MAP_LAYERS = [
 export type MapLayer = (typeof MAP_LAYERS)[number]["id"];
 // Every map layer has an RIVM area layer under the dots.
 export type AreaLayer = MapLayer;
+
+// The map's two modes (decision #36): the air of this hour, or the annual average.
+export type MapPeriod = "nu" | "jaar";
+
+// The annual view (decisions #36–#39): RIVM's 25 m map of the annual average,
+// the one Atlas Leefomgeving shows, in RIVM's own WHO colour scale. Only the
+// two pollutants that weigh most for long-term health.
+export const ANNUAL_YEAR = 2024;
+
+type AnnualBand = { upTo: number | null; color: string };
+
+// bands: RIVM's style rivm_nsl_{NO2,PM25}_WHO_v3 ("intervals": a value below
+// upTo gets that colour; null is the open top band). who and eu2030 are band
+// edges: the WHO 2021 annual guideline and the EU limit from 2030.
+export const ANNUAL_LAYERS = [
+  {
+    id: "pm25",
+    label: "Fijnstof (PM2,5)",
+    hint: "Kleine deeltjes die diep in je longen en bloed komen. Weegt het zwaarst voor je gezondheid.",
+    legend: `Fijnstof PM2,5, jaargemiddelde ${ANNUAL_YEAR}, in µg/m³`,
+    rivmLayer: `rivm_nsl_20260401_gm_PM25${ANNUAL_YEAR}`,
+    who: 5,
+    eu2030: 10,
+    bands: [
+      { upTo: 5, color: "#ABD9E9" },
+      { upTo: 7, color: "#FFFFBF" },
+      { upTo: 8, color: "#FAE7AC" },
+      { upTo: 9, color: "#F0BC8B" },
+      { upTo: 10, color: "#E3926D" },
+      { upTo: 11, color: "#D66C51" },
+      { upTo: 15, color: "#C44539" },
+      { upTo: null, color: "#B01D1B" },
+    ] as readonly AnnualBand[],
+  },
+  {
+    id: "no2",
+    label: "Stikstofdioxide (NO₂)",
+    hint: "Vooral langs drukke wegen. Een maat voor uitlaatgassen.",
+    legend: `Stikstofdioxide NO₂, jaargemiddelde ${ANNUAL_YEAR}, in µg/m³`,
+    rivmLayer: `rivm_nsl_20260401_gm_NO2${ANNUAL_YEAR}`,
+    who: 10,
+    eu2030: 20,
+    bands: [
+      { upTo: 8, color: "#3175B4" },
+      { upTo: 10, color: "#ABD9E9" },
+      { upTo: 12, color: "#FFFFBF" },
+      { upTo: 14, color: "#FAE7AC" },
+      { upTo: 16, color: "#F0BC8B" },
+      { upTo: 20, color: "#E3926D" },
+      { upTo: 25, color: "#D66C51" },
+      { upTo: 30, color: "#C44539" },
+      { upTo: null, color: "#B01D1B" },
+    ] as readonly AnnualBand[],
+  },
+] as const;
+export type AnnualLayer = (typeof ANNUAL_LAYERS)[number]["id"];
+
+export function isAnnualLayer(value: string): value is AnnualLayer {
+  return ANNUAL_LAYERS.some((l) => l.id === value);
+}
+
+export function annualInfo(layer: AnnualLayer) {
+  return ANNUAL_LAYERS.find((l) => l.id === layer) ?? ANNUAL_LAYERS[0];
+}
+
+// The annual view's layer: the chosen pollutant if it has an annual map, else PM2.5.
+export function annualLayerFor(layer: MapLayer): AnnualLayer {
+  return isAnnualLayer(layer) ? layer : "pm25";
+}
+
+export function annualColor(layer: AnnualLayer, value: number) {
+  const bands = annualInfo(layer).bands;
+  return (bands.find((b) => b.upTo !== null && value < b.upTo) ?? bands[bands.length - 1]).color;
+}
+
+// The three categories of the annual view, named next to every colour.
+export function annualCategory(layer: AnnualLayer, value: number) {
+  const { who, eu2030 } = annualInfo(layer);
+  if (value < who) return "Onder het WHO-advies";
+  if (value < eu2030) return "Boven het WHO-advies";
+  return "Boven de EU-norm 2030";
+}
+
+// Measured annual averages per official station (decision #41), from Luchtmeetnet's
+// validated yearly files. hours is the time covered; a daily value counts 24.
+export type AnnualValue = { mean: number; hours: number };
+
+export type AnnualStation = Pick<
+  StationReading,
+  "id" | "source" | "external_id" | "kind" | "name" | "organisation" | "municipality" | "longitude" | "latitude" | "details"
+> & {
+  // {"no2": {"2024": {mean, hours}, ...}, "pm25": {...}}
+  annual: Partial<Record<AnnualLayer, Record<string, AnnualValue>>>;
+};
+
+// The trend in the station panel, and the share of a year needed for a value.
+export const ANNUAL_FIRST_YEAR = 2012;
+export const ANNUAL_LAST_YEAR = 2025;
+export const MIN_ANNUAL_COVERAGE = 0.75;
+
+export function hoursInYear(year: number) {
+  return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0 ? 8784 : 8760;
+}
+
+// A station's annual average for one year: the value with its share of the
+// year measured, "few" below MIN_ANNUAL_COVERAGE, or null when it doesn't
+// measure the pollutant at all.
+export function annualValue(station: AnnualStation, layer: AnnualLayer, year: number) {
+  const series = station.annual[layer];
+  if (!series) return null;
+  const value = series[String(year)];
+  const share = value ? value.hours / hoursInYear(year) : 0;
+  if (!value || share < MIN_ANNUAL_COVERAGE) return { kind: "few" as const, share };
+  return { kind: "value" as const, mean: value.mean, share };
+}
+
+// "2,1×": how many times the WHO guideline.
+export function formatTimesWho(layer: AnnualLayer, mean: number) {
+  return `${formatNumber(mean / annualInfo(layer).who)}×`;
+}
 
 // WHO 2021 guideline values in µg/m³ (24-hour mean; 8-hour mean for O₃).
 export const WHO_GUIDELINE: Partial<Record<Quantity, number>> = {

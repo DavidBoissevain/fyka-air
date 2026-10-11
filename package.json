@@ -11,7 +11,8 @@
     "probe:samenmeten": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/probe-samenmeten.mts",
     "probe:luchtmeetnet": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/probe-luchtmeetnet.mts",
     "check:luchtmeetnet": "node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-luchtmeetnet-client.mts",
-    "check:samenmeten": "node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-samenmeten-client.mts"
+    "check:samenmeten": "node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-samenmeten-client.mts",
+    "import:annual": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/import-annual.mts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

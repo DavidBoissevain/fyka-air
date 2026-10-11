@@ -385,6 +385,13 @@ section.guide { display: grid; gap: 28px; }
 @media (max-width: 760px) {
   .ramp { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
+.ramp.annual { grid-template-columns: repeat(var(--n), minmax(0, 1fr)); }
+@media (max-width: 760px) {
+  .ramp.annual { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+.annual-scale { display: grid; gap: 8px; }
+.annual-scale h4 { font-size: var(--t-sm); font-weight: 600; }
+.annual-scale p { color: var(--muted); font-size: var(--t-sm); font-variant-numeric: tabular-nums; }
 
 .lki-table { display: grid; gap: 0; }
 .lki-row {
@@ -621,6 +628,10 @@ footer { font-size: var(--t-xs); color: var(--muted); display: grid; gap: 4px; m
     <div class="sheet">
       <div style="display:grid;gap:6px"><h3>Luchtkwaliteitsindex (LKI)</h3><p class="lead">The RIVM index runs from 1 to 11 in five categories. These colours are only for air quality values: map dots, the index tile and chart thresholds. Use the category name next to the colour, never the colour alone.</p></div>
       <div class="lki-table" id="lki-table"></div>
+    </div>
+    <div class="sheet">
+      <div style="display:grid;gap:6px"><h3>Jaargemiddelde (the annual view)</h3><p class="lead">The one exception to "LKI for the air": annual averages use RIVM's own WHO scale, as on Atlas Leefomgeving. Blue is under the WHO guideline, pale yellow to dark red above it. Name each colour by its category: Onder het WHO-advies, Boven het WHO-advies or Boven de EU-norm 2030. Never use these colours for hourly values, or the LKI colours for annual averages.</p></div>
+      <div id="annual-scales" style="display:grid;gap:20px"></div>
     </div>
   </section>
 
@@ -1007,6 +1018,19 @@ footer { font-size: var(--t-xs); color: var(--muted); display: grid; gap: 4px; m
     var cells = "";
     for (var n = c.from; n <= c.to; n++) cells += '<button type="button" data-copy="' + LKI[n - 1].c + '" style="background:' + LKI[n - 1].c + ";color:" + LKI[n - 1].fg + '" title="' + LKI[n - 1].c + '">' + n + "</button>";
     return '<div class="lki-row"><div class="cat">' + c.name + "<small>LKI " + (c.from === c.to ? c.from : c.from + "–" + c.to) + '</small></div><div class="cells">' + cells + "</div><p>" + c.advice + "</p></div>";
+  }).join("");
+
+  // RIVM's WHO scale for annual averages (ANNUAL_LAYERS in lib/air-quality.ts).
+  var ANNUAL = [
+    { name: "Fijnstof PM2,5", who: 5, eu: 10, bands: [["< 5", "#ABD9E9"], ["5–7", "#FFFFBF"], ["7–8", "#FAE7AC"], ["8–9", "#F0BC8B"], ["9–10", "#E3926D"], ["10–11", "#D66C51"], ["11–15", "#C44539"], ["≥ 15", "#B01D1B"]] },
+    { name: "Stikstofdioxide NO₂", who: 10, eu: 20, bands: [["< 8", "#3175B4"], ["8–10", "#ABD9E9"], ["10–12", "#FFFFBF"], ["12–14", "#FAE7AC"], ["14–16", "#F0BC8B"], ["16–20", "#E3926D"], ["20–25", "#D66C51"], ["25–30", "#C44539"], ["≥ 30", "#B01D1B"]] },
+  ];
+  var DARK_TEXT = ["#ABD9E9", "#FFFFBF", "#FAE7AC", "#F0BC8B", "#E3926D"];
+  document.getElementById("annual-scales").innerHTML = ANNUAL.map(function (a) {
+    var cells = a.bands.map(function (b) {
+      return '<button type="button" data-copy="' + b[1] + '" style="background:' + b[1] + ";color:" + (DARK_TEXT.indexOf(b[1]) >= 0 ? "#1A1D24" : "#F8FAFC") + '"><b>' + b[0] + "</b>" + b[1] + "</button>";
+    }).join("");
+    return '<div class="annual-scale"><h4>' + a.name + ', jaargemiddelde in µg/m³</h4><div class="ramp annual" style="--n:' + a.bands.length + '">' + cells + "</div><p>WHO-advies " + a.who + " · EU-norm 2030 " + a.eu + " · both are band edges and marked on the legend</p></div>";
   }).join("");
 
   document.getElementById("legend-scale").innerHTML = LKI.map(function (l) { return '<span style="background:' + l.c + '"></span>'; }).join("");

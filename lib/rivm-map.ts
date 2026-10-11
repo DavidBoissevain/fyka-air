@@ -1,12 +1,23 @@
 // RIVM's current air quality maps: an open WMS on data.rivm.nl, computed every
 // hour on a 125 m grid from official measurements plus a road model. We
 // proxy it (app/api/rivm) and restyle it in our LKI colours with SLD_BODY.
-// See TECHNICAL.md, "RIVM model maps" and decision #26.
+// See TECHNICAL.md, "RIVM model maps" and decision #26. The annual view uses
+// RIVM's annual maps the same way (app/api/rivm/jaar, decisions #36–#39).
 import { createHash } from "node:crypto";
 
-import { BAND_QUANTITIES, LKI_COLORS, SUB_INDEX_EDGES, type AreaLayer } from "@/lib/air-quality";
+import {
+  ANNUAL_LAYERS,
+  BAND_QUANTITIES,
+  LKI_COLORS,
+  SUB_INDEX_EDGES,
+  annualInfo,
+  type AnnualLayer,
+  type AreaLayer,
+} from "@/lib/air-quality";
 
 const WMS = "https://data.rivm.nl/geo/lucht/wms";
+// Atlas Leefomgeving's WMS, with RIVM's annual maps on a 25 m grid (decision #37).
+const ANNUAL_WMS = "https://data.rivm.nl/geo/alo/wms";
 const TIMEOUT_MS = 15_000;
 
 export const AREA_LAYERS: readonly AreaLayer[] = ["lki", ...BAND_QUANTITIES];
@@ -104,6 +115,80 @@ export async function fetchVersion(layer: AreaLayer) {
     throw new Error(`RIVM WMS ${res.status}: ${(await res.text()).slice(0, 200)}`);
   }
   return createHash("sha1").update(Buffer.from(await res.arrayBuffer())).digest("hex").slice(0, 12);
+}
+
+// RIVM's annual map in RIVM's own WHO colours (decision #38), from our band list
+// so the tiles and the legend can't drift apart. Below 0 (no data) stays transparent.
+function annualSld(layer: AnnualLayer) {
+  const { rivmLayer, bands } = annualInfo(layer);
+  const entries = [
+    `<ColorMapEntry color="#000000" opacity="0" quantity="0"/>`,
+    ...bands.map((b) => `<ColorMapEntry color="${b.color}" opacity="1" quantity="${b.upTo ?? 100000}"/>`),
+  ].join("");
+  return (
+    `<StyledLayerDescriptor version="1.0.0" xmlns="http://www.opengis.net/sld"><NamedLayer>` +
+    `<Name>alo:${rivmLayer}</Name><UserStyle><FeatureTypeStyle><Rule><RasterSymbolizer>` +
+    `<ColorMap type="intervals">${entries}</ColorMap>` +
+    `</RasterSymbolizer></Rule></FeatureTypeStyle></UserStyle></NamedLayer></StyledLayerDescriptor>`
+  );
+}
+
+export async function fetchAnnualTile(layer: AnnualLayer, z: number, x: number, y: number) {
+  const b = tileBbox(z, x, y);
+  const url = new URL(ANNUAL_WMS);
+  url.search = new URLSearchParams({
+    service: "WMS",
+    version: "1.1.1",
+    request: "GetMap",
+    layers: `alo:${annualInfo(layer).rivmLayer}`,
+    format: "image/png",
+    transparent: "true",
+    srs: "EPSG:3857",
+    bbox: [b.minX, b.minY, b.maxX, b.maxY].join(","),
+    width: "256",
+    height: "256",
+    SLD_BODY: annualSld(layer),
+  }).toString();
+  const res = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS) });
+  if (!res.ok || !res.headers.get("content-type")?.startsWith("image/png")) {
+    throw new Error(`RIVM WMS ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  }
+  return res.arrayBuffer();
+}
+
+export type AnnualPointValues = Record<AnnualLayer, number | null>;
+
+// RIVM's annual values at one point. The WMS answers without the layer's name
+// ({"GRAY_INDEX": 19.5}), so each layer gets its own request.
+export async function fetchAnnualPoint(lon: number, lat: number): Promise<AnnualPointValues> {
+  const d = 0.0005;
+  const entries = await Promise.all(
+    ANNUAL_LAYERS.map(async ({ id, rivmLayer }) => {
+      const url = new URL(ANNUAL_WMS);
+      url.search = new URLSearchParams({
+        service: "WMS",
+        version: "1.1.1",
+        request: "GetFeatureInfo",
+        layers: `alo:${rivmLayer}`,
+        query_layers: `alo:${rivmLayer}`,
+        styles: "",
+        srs: "EPSG:4326",
+        bbox: [lon - d, lat - d, lon + d, lat + d].join(","),
+        width: "3",
+        height: "3",
+        x: "1",
+        y: "1",
+        info_format: "application/json",
+      }).toString();
+      const res = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS) });
+      if (!res.ok) throw new Error(`RIVM WMS ${res.status}: ${(await res.text()).slice(0, 200)}`);
+      const json = (await res.json()) as { features?: { properties?: { GRAY_INDEX?: unknown } }[] };
+      const value = json.features?.[0]?.properties?.GRAY_INDEX;
+      // No data (over water, outside the grid) comes as 3.4e38, the largest float.
+      return [id, typeof value === "number" && value >= 0 && value < 1000 ? value : null] as const;
+    }),
+  );
+  return Object.fromEntries(entries) as AnnualPointValues;
 }
 
 export type PointValues = Record<AreaLayer, number | null>;

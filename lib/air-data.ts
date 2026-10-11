@@ -5,6 +5,7 @@ import { cacheLife } from "next/cache";
 import {
   CHART_QUANTITIES,
   amsterdamDay,
+  type AnnualStation,
   type ChartQuantity,
   type StationHistory,
   type StationReading,
@@ -12,6 +13,8 @@ import {
 
 // New data arrives hourly; refresh every 5 minutes so it shows up soon after.
 const HOURLY_DATA = { stale: 300, revalidate: 300, expire: 3600 };
+// Annual averages change once a year; an hour keeps a failed read from sticking long.
+const ANNUAL_DATA = { stale: 3600, revalidate: 3600, expire: 86400 };
 const HOUR = 60 * 60 * 1000;
 
 function env(name: string) {
@@ -45,6 +48,23 @@ export async function getStationReadings(): Promise<StationReading[]> {
     });
     all.push(...page);
     if (page.length < PAGE) return all;
+  }
+}
+
+// Official stations with their measured annual averages (decision #41), about
+// 100 rows. Without them the annual view still works (area only), so a failed
+// read gives an empty list instead of breaking the page.
+export async function getStationAnnual(): Promise<AnnualStation[]> {
+  "use cache";
+  cacheLife(ANNUAL_DATA);
+  try {
+    return await rest<AnnualStation[]>("station_annual_series", {
+      select: "id,source,external_id,kind,name,organisation,municipality,longitude,latitude,details,annual",
+      order: "id",
+    });
+  } catch (error) {
+    console.error(error);
+    return [];
   }
 }
 

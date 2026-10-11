@@ -1,27 +1,39 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { ChartBarIcon } from "lucide-react";
 import type { StyleSpecification } from "maplibre-gl";
 
 import { Button } from "@/components/ui/button";
 import { Map, MapControls, MapMarker, MapPopup, MarkerContent } from "@/components/ui/map";
+import { AnnualStationDetails } from "@/components/air/annual-station-panel";
 import { DataInfo } from "@/components/air/data-info";
 import { LayerPicker } from "@/components/air/layer-picker";
 import { MapSearch } from "@/components/air/map-search";
-import { PointValue } from "@/components/air/point-value";
-import { RivmLayer } from "@/components/air/rivm-layer";
-import { StationLayer } from "@/components/air/station-layer";
+import { PeriodSwitch } from "@/components/air/period-switch";
+import { AnnualPointValue, PointValue } from "@/components/air/point-value";
+import { AnnualRivmLayer, RivmLayer } from "@/components/air/rivm-layer";
+import { StationLayer, lkiPaint, type Paint } from "@/components/air/station-layer";
 import { Overview, StationDetails } from "@/components/air/station-panel";
 import {
+  ANNUAL_LAYERS,
+  ANNUAL_YEAR,
   LKI_COLORS,
   MAP_LAYERS,
   NO_INDEX_COLOR,
+  annualColor,
+  annualInfo,
+  annualLayerFor,
+  annualValue,
   categoryRanges,
+  formatNumber,
+  type AnnualLayer,
+  type AnnualStation,
   type MapLayer,
   type StationReading,
 } from "@/lib/air-quality";
 import { setMapLayer, useMapLayer } from "@/hooks/use-map-layer";
+import { setMapPeriod, useMapPeriod } from "@/hooks/use-map-period";
 import type { Place } from "@/lib/geocode";
 import { cn } from "@/lib/utils";
 
@@ -89,19 +101,123 @@ function Legend({ layer }: { layer: MapLayer }) {
   );
 }
 
+// The annual view's legend (decision #38): RIVM's bands, the WHO guideline and
+// the EU limit for 2030 marked on the bar, and the three categories by name.
+function AnnualLegend({ layer }: { layer: AnnualLayer }) {
+  const { legend, bands, who, eu2030 } = annualInfo(layer);
+  const n = bands.length;
+  // Position of the gap after the i-th cell, as in the hourly legend.
+  const at = (i: number) => `calc(${i} * (100% + 0.125rem) / ${n} - 0.0625rem)`;
+  const edge = (value: number) => bands.findIndex((b) => b.upTo === value) + 1;
+  const marks = [
+    { value: who, label: "WHO" },
+    { value: eu2030, label: "EU 2030" },
+  ];
+  const colors = (from: number, to: number) =>
+    bands.filter((b) => (b.upTo ?? Infinity) > from && (b.upTo ?? Infinity) <= to).map((b) => b.color);
+  const categories = [
+    { name: "Onder het WHO-advies", range: `tot ${who}`, colors: colors(-Infinity, who) },
+    { name: "Boven het WHO-advies", range: `${who} tot ${eu2030}`, colors: colors(who, eu2030) },
+    { name: "Boven de EU-norm 2030", range: `${eu2030} of meer`, colors: colors(eu2030, Infinity) },
+  ];
+  return (
+    <div className="bg-card/95 pointer-events-auto grid w-full gap-2 rounded-lg border px-3 py-2.5 text-xs shadow-lg backdrop-blur-sm sm:w-72">
+      <span className="font-semibold">{legend}</span>
+      <div className="grid gap-1">
+        <div className="relative">
+          <div className="grid gap-0.5" style={{ gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))` }}>
+            {bands.map((b) => (
+              <span key={b.color} className="h-2.5 rounded-xs ring-1 ring-black/15 ring-inset" style={{ background: b.color }} />
+            ))}
+          </div>
+          {marks.map((m) => (
+            <span
+              key={m.label}
+              className="border-foreground/70 absolute -top-1 -bottom-1 border-l border-dashed"
+              style={{ left: at(edge(m.value)) }}
+              aria-hidden
+            />
+          ))}
+        </div>
+        {/* The WHO guideline and the EU limit, under their marks. */}
+        <div className="text-muted-foreground relative h-3.5 tabular-nums">
+          {marks.map((m) => (
+            <span
+              key={m.label}
+              className="absolute top-0 -translate-x-1/2 leading-none whitespace-nowrap"
+              style={{ left: at(edge(m.value)) }}
+            >
+              {formatNumber(m.value, 0)} <span className="text-foreground font-medium">{m.label}</span>
+            </span>
+          ))}
+        </div>
+      </div>
+      <dl className="grid grid-cols-[1.75rem_1fr_auto] items-center gap-x-2 gap-y-1">
+        {categories.map((c) => (
+          <div key={c.name} className="contents">
+            <span
+              className="h-2.5 rounded-xs ring-1 ring-black/15 ring-inset"
+              style={{ background: c.colors.length > 1 ? `linear-gradient(90deg, ${c.colors.join(", ")})` : c.colors[0] }}
+              aria-hidden
+            />
+            <dt>{c.name}</dt>
+            <dd className="text-muted-foreground tabular-nums">{c.range}</dd>
+          </div>
+        ))}
+      </dl>
+      <div className="text-muted-foreground flex flex-wrap gap-x-3.5 gap-y-1">
+        <span className="inline-flex items-center gap-1.5">
+          <i className="size-3 rounded-full border border-[#8C939D] dark:border-[#64748B]" style={{ background: bands[Math.floor(n / 2)].color }} />
+          Meetstation (gemeten)
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <i className="size-3 rounded-full border border-[#8C939D] dark:border-[#64748B]" style={{ background: NO_INDEX_COLOR }} />
+          Niet gemeten
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <i className="size-3 rounded-xs opacity-70" style={{ background: `linear-gradient(90deg, ${bands[1].color}, ${bands[n - 3].color})` }} />
+          Gebied: berekend door het RIVM
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// The annual view's dots (decision #42): the measured annual average of the
+// map's year in RIVM's colours, grey without one. Higher values on top.
+function annualPaint(layer: AnnualLayer): Paint<AnnualStation> {
+  return (s) => {
+    const value = annualValue(s, layer, ANNUAL_YEAR);
+    return value?.kind === "value"
+      ? { color: annualColor(layer, value.mean), rank: value.mean }
+      : { color: NO_INDEX_COLOR, rank: -1 };
+  };
+}
+
 type Props = {
   stations: StationReading[];
+  // Official stations with measured annual averages, for the annual view.
+  annualStations: AnnualStation[];
   styles: { light: StyleSpecification; dark: StyleSpecification };
 };
 
-export function AirMap({ stations, styles }: Props) {
+export function AirMap({ stations, annualStations, styles }: Props) {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [overviewOpen, setOverviewOpen] = useState(false);
   const [place, setPlace] = useState<Place | null>(null);
   const mapLayer = useMapLayer();
+  // The annual view (decision #36) shows RIVM's annual map without dots or panel.
+  const annual = useMapPeriod() === "jaar";
+  const annualLayer = annualLayerFor(mapLayer);
   const [probe, setProbe] = useState<{ longitude: number; latitude: number } | null>(null);
-  const selected = stations.find((s) => s.id === selectedId) ?? null;
-  const panelOpen = selected !== null || overviewOpen;
+  // The selection is kept across modes; each mode looks it up in its own list.
+  const selected = annual ? null : stations.find((s) => s.id === selectedId) ?? null;
+  const annualSelected = annual ? annualStations.find((s) => s.id === selectedId) ?? null : null;
+  const panelOpen = annual ? annualSelected !== null : selected !== null || overviewOpen;
+  const nowPaint = useMemo(() => lkiPaint(mapLayer), [mapLayer]);
+  const yearPaint = useMemo(() => annualPaint(annualLayer), [annualLayer]);
+  const nowColor = useCallback((s: StationReading) => lkiPaint("lki")(s).color, []);
+  const yearColor = useCallback((s: AnnualStation) => yearPaint(s).color, [yearPaint]);
   const newestCitizen = useMemo(
     () =>
       stations.reduce<string | null>(
@@ -147,33 +263,61 @@ export function AirMap({ stations, styles }: Props) {
           pitchWithRotate={false}
           attributionControl={false}
         >
-          <RivmLayer layer={mapLayer} />
-          <StationLayer
-            stations={stations}
-            colorBy={mapLayer}
-            selectedId={selectedId}
-            onSelect={selectStation}
-            // A click next to the dots shows RIVM's value there.
-            onMapClick={(lngLat) => setProbe({ longitude: lngLat.lng, latitude: lngLat.lat })}
-          />
+          {annual ? <AnnualRivmLayer layer={annualLayer} /> : <RivmLayer layer={mapLayer} />}
+          {annual ? (
+            <StationLayer
+              stations={annualStations}
+              paint={yearPaint}
+              selectedId={selectedId}
+              onSelect={selectStation}
+              // A click next to the dots shows RIVM's value there.
+              onMapClick={(lngLat) => setProbe({ longitude: lngLat.lng, latitude: lngLat.lat })}
+            />
+          ) : (
+            <StationLayer
+              stations={stations}
+              paint={nowPaint}
+              selectedId={selectedId}
+              onSelect={selectStation}
+              onMapClick={(lngLat) => setProbe({ longitude: lngLat.lng, latitude: lngLat.lat })}
+            />
+          )}
           {/* Just under the header row, right-aligned with its buttons (px-6). */}
           <MapControls
             position="top-right"
             showLocate
             className="top-17 right-6 md:top-19 lg:right-[calc(var(--panel)+1.5rem)]"
           />
-          <MapSearch
-            stations={stations}
-            onSelectStation={selectStation}
-            onSelectPlace={(chosen, nearestId) => {
-              setPlace(chosen);
-              selectStation(nearestId);
-            }}
-            onClear={() => setPlace(null)}
-            // In the header row, top left: same padding and height as the
-            // header, and clear of its two buttons on the right.
-            className="top-3 right-34 left-6 max-w-100 md:right-38"
-          />
+          {/* In the header row, top left: same padding and height as the
+              header, and clear of its two buttons on the right. */}
+          {annual ? (
+            <MapSearch
+              stations={annualStations}
+              colorOf={yearColor}
+              // A place shows the calculated annual value there, not the nearest station.
+              nearest={false}
+              onSelectStation={selectStation}
+              onSelectPlace={(chosen) => {
+                setPlace(chosen);
+                setSelectedId(null);
+                setProbe({ longitude: chosen.longitude, latitude: chosen.latitude });
+              }}
+              onClear={() => setPlace(null)}
+              className="top-3 right-34 left-6 max-w-100 md:right-38"
+            />
+          ) : (
+            <MapSearch
+              stations={stations}
+              colorOf={nowColor}
+              onSelectStation={selectStation}
+              onSelectPlace={(chosen, nearestId) => {
+                setPlace(chosen);
+                selectStation(nearestId);
+              }}
+              onClear={() => setPlace(null)}
+              className="top-3 right-34 left-6 max-w-100 md:right-38"
+            />
+          )}
           {place && (
             <MapMarker longitude={place.longitude} latitude={place.latitude}>
               <MarkerContent>
@@ -183,29 +327,42 @@ export function AirMap({ stations, styles }: Props) {
           )}
           {probe && (
             <MapPopup
-              key={`${probe.longitude},${probe.latitude}`}
+              key={`${probe.longitude},${probe.latitude},${annual}`}
               longitude={probe.longitude}
               latitude={probe.latitude}
               closeButton
               closeOnClick={false}
               onClose={() => setProbe(null)}
             >
-              <PointValue longitude={probe.longitude} latitude={probe.latitude} layer={mapLayer} />
+              {annual ? (
+                <AnnualPointValue longitude={probe.longitude} latitude={probe.latitude} layer={annualLayer} />
+              ) : (
+                <PointValue longitude={probe.longitude} latitude={probe.latitude} layer={mapLayer} />
+              )}
             </MapPopup>
           )}
         </Map>
-        {/* Under the search box, aligned with the zoom controls on the right. */}
-        <LayerPicker
-          value={mapLayer}
-          onChange={setMapLayer}
-          className="absolute top-17 left-6 z-10 max-w-[calc(100%-6.5rem)] md:top-19"
-        />
+        {/* Under the search box, aligned with the zoom controls on the right: the mode, then the layer. */}
+        <div className="pointer-events-none absolute top-17 left-6 z-10 flex max-w-[calc(100%-6.5rem)] flex-col items-start gap-2 md:top-19">
+          <PeriodSwitch value={annual ? "jaar" : "nu"} onChange={setMapPeriod} className="pointer-events-auto" />
+          {annual ? (
+            <LayerPicker
+              layers={ANNUAL_LAYERS}
+              value={annualLayer}
+              onChange={setMapLayer}
+              period={String(ANNUAL_YEAR)}
+              className="pointer-events-auto"
+            />
+          ) : (
+            <LayerPicker layers={MAP_LAYERS} value={mapLayer} onChange={setMapLayer} className="pointer-events-auto" />
+          )}
+        </div>
         {/* Legend bottom left, buttons bottom right; on phones the buttons sit above the full-width legend. */}
         <div className="pointer-events-none absolute right-3 bottom-4 left-4 z-10 flex flex-col-reverse items-start gap-2 sm:flex-row sm:items-end sm:justify-between lg:right-[calc(var(--panel)+0.75rem)]">
-          <Legend layer={mapLayer} />
+          {annual ? <AnnualLegend layer={annualLayer} /> : <Legend layer={mapLayer} />}
           <div className="pointer-events-auto flex gap-2 self-end sm:mb-4">
             <DataInfo stations={stations} />
-            {!overviewOpen && (
+            {!annual && !overviewOpen && (
               <Button
                 variant="outline"
                 onClick={() => {
@@ -221,7 +378,10 @@ export function AirMap({ stations, styles }: Props) {
           </div>
         </div>
         <div className="text-muted-foreground bg-card/80 absolute right-2 bottom-1.5 z-10 rounded px-1.5 text-[0.6875rem] lg:right-[calc(var(--panel)+0.5rem)]">
-          OpenFreeMap · © OpenMapTiles · © OpenStreetMap · Metingen: Luchtmeetnet, RIVM Samen Meten · Kaart: RIVM, luchtmeetnet.nl
+          OpenFreeMap · © OpenMapTiles · © OpenStreetMap ·{" "}
+          {annual
+            ? `Kaart: RIVM, jaargemiddelde ${ANNUAL_YEAR}`
+            : "Metingen: Luchtmeetnet, RIVM Samen Meten · Kaart: RIVM, luchtmeetnet.nl"}
         </div>
       </div>
       {panelOpen && (
@@ -233,7 +393,9 @@ export function AirMap({ stations, styles }: Props) {
           className="bg-card relative overflow-y-auto border-t p-5 scrollbar-gutter-stable lg:absolute lg:inset-y-0 lg:right-0 lg:z-30 lg:w-95 lg:border-t-0 lg:border-l lg:p-6 lg:pt-25"
           aria-live="polite"
         >
-          {selected ? (
+          {annualSelected ? (
+            <AnnualStationDetails station={annualSelected} layer={annualLayer} onClose={() => setSelectedId(null)} />
+          ) : selected ? (
             <StationDetails station={selected} place={place} newestCitizen={newestCitizen} onClose={() => setSelectedId(null)} />
           ) : (
             <Overview stations={stations} onClose={() => setOverviewOpen(false)} />

@@ -100,6 +100,55 @@ function PollutantRow({ quantity, station }: { quantity: Quantity; station: Stat
   );
 }
 
+// Name, close button, source badges and type · organisation · code: the top
+// of the station panel in both modes. `children` adds lines below, such as
+// the measurement time.
+export function StationHeading({
+  station,
+  onClose,
+  children,
+}: {
+  station: Pick<StationReading, "kind" | "name" | "external_id" | "organisation" | "details">;
+  onClose: () => void;
+  children?: React.ReactNode;
+}) {
+  const citizen = station.kind === "citizen";
+  const type = station.details.type ? STATION_TYPES[station.details.type] ?? station.details.type : null;
+  const source = citizen ? station.details.project ?? station.organisation : null;
+  const subtitle = (citizen ? [source] : [type, station.organisation]).filter(Boolean).join(" · ");
+  return (
+    <div className="grid gap-1.5">
+      <div className="flex items-start justify-between gap-2.5">
+        <h2 className="text-[1.75rem] leading-tight font-semibold tracking-tight wrap-anywhere">
+          {stationTitle(station)}
+        </h2>
+        <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="Sluiten" className="-mr-1.5">
+          <XIcon />
+        </Button>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        {citizen ? (
+          <>
+            <Badge variant="outline" className="text-muted-foreground">
+              <span className="bg-muted-foreground size-1.5 rounded-full" aria-hidden />
+              Burgersensor
+            </Badge>
+            <Badge variant="outline">Gekalibreerd door het RIVM</Badge>
+          </>
+        ) : (
+          <Badge className="bg-brand-soft text-brand-text">Officieel meetstation</Badge>
+        )}
+      </div>
+      <p className="text-muted-foreground text-sm">
+        {subtitle}
+        {subtitle && " · "}
+        <span className="font-mono text-[0.92em]">{station.external_id}</span>
+      </p>
+      {children}
+    </div>
+  );
+}
+
 type DetailsProps = {
   station: StationReading;
   // The searched address or place, to show how far away the station is.
@@ -111,9 +160,6 @@ type DetailsProps = {
 
 export function StationDetails({ station, place, newestCitizen, onClose }: DetailsProps) {
   const citizen = station.kind === "citizen";
-  const type = station.details.type ? STATION_TYPES[station.details.type] ?? station.details.type : null;
-  const source = citizen ? station.details.project ?? station.organisation : null;
-  const subtitle = (citizen ? [source] : [type, station.organisation]).filter(Boolean).join(" · ");
   // Official stations list all four pollutants (showing what they don't measure);
   // sensors only what they measure.
   const quantities = citizen
@@ -133,33 +179,7 @@ export function StationDetails({ station, place, newestCitizen, onClose }: Detai
         : "Dit station meet niet genoeg stoffen voor een luchtkwaliteitsindex.";
   return (
     <div className="grid content-start gap-5">
-      <div className="grid gap-1.5">
-        <div className="flex items-start justify-between gap-2.5">
-          <h2 className="text-[1.75rem] leading-tight font-semibold tracking-tight wrap-anywhere">
-            {stationTitle(station)}
-          </h2>
-          <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="Sluiten" className="-mr-1.5">
-            <XIcon />
-          </Button>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {citizen ? (
-            <>
-              <Badge variant="outline" className="text-muted-foreground">
-                <span className="bg-muted-foreground size-1.5 rounded-full" aria-hidden />
-                Burgersensor
-              </Badge>
-              <Badge variant="outline">Gekalibreerd door het RIVM</Badge>
-            </>
-          ) : (
-            <Badge className="bg-brand-soft text-brand-text">Officieel meetstation</Badge>
-          )}
-        </div>
-        <p className="text-muted-foreground text-sm">
-          {subtitle}
-          {subtitle && " · "}
-          <span className="font-mono text-[0.92em]">{station.external_id}</span>
-        </p>
+      <StationHeading station={station} onClose={onClose}>
         <Freshness measuredAt={station.measured_at} citizen={citizen ? { newest: newestCitizen } : undefined} />
         {place && (
           <span className="text-muted-foreground inline-flex items-center gap-1.5 text-sm">
@@ -167,7 +187,7 @@ export function StationDetails({ station, place, newestCitizen, onClose }: Detai
             {formatNumber(distanceKm(place, station))} km van {place.name}
           </span>
         )}
-      </div>
+      </StationHeading>
 
       <div className="grid gap-2">
         <LkiSummary value={station.readings.lki?.value} noIndex={noIndex} />

@@ -4,13 +4,47 @@ import { useEffect, useRef, useState } from "react";
 import type * as MapLibreGL from "maplibre-gl";
 
 import { useMap } from "@/components/ui/map";
-import type { AreaLayer } from "@/lib/air-quality";
+import { ANNUAL_YEAR, type AnnualLayer, type AreaLayer } from "@/lib/air-quality";
 
+// Source and layer ids.
 const SOURCE = "rivm";
-const LAYER = "rivm";
+const ANNUAL_ID = "rivm-jaar";
 
 // Light enough that roads, labels and the dots stay readable on top.
 const OPACITY = { light: 0.6, dark: 0.5 } as const;
+// The annual view has no dots yet, so its colours can be stronger.
+const ANNUAL_OPACITY = { light: 0.7, dark: 0.6 } as const;
+
+// A raster layer above the land but under the basemap's roads, borders and
+// labels (its first line or symbol layer), and so under our dots too.
+function addRaster(map: MapLibreGL.Map, id: string, url: string, maxzoom: number, opacity: number) {
+  const beforeId = map.getStyle().layers.find((l) => l.type === "line" || l.type === "symbol")?.id;
+  map.addSource(id, {
+    type: "raster",
+    tiles: [url],
+    tileSize: 256,
+    minzoom: 6,
+    maxzoom,
+    bounds: [3.2, 50.7, 7.3, 53.6],
+  });
+  map.addLayer(
+    {
+      id,
+      type: "raster",
+      source: id,
+      paint: { "raster-opacity": opacity, "raster-resampling": "nearest", "raster-fade-duration": 150 },
+    },
+    beforeId,
+  );
+  return () => {
+    try {
+      if (map.getLayer(id)) map.removeLayer(id);
+      if (map.getSource(id)) map.removeSource(id);
+    } catch {
+      // The style may be mid-reload.
+    }
+  };
+}
 
 // RIVM refreshes its map once an hour at an unknown moment, and the version
 // endpoint is cached for a minute, so a new hour shows within about 3 minutes.
@@ -68,34 +102,8 @@ export function RivmLayer({ layer }: { layer: AreaLayer | null }) {
     const v = versionRef.current;
     if (!isLoaded || !map || !layer || !v) return;
 
-    const beforeId = map.getStyle().layers.find((l) => l.type === "line" || l.type === "symbol")?.id;
     urlRef.current = tileUrl(layer, v);
-    map.addSource(SOURCE, {
-      type: "raster",
-      tiles: [urlRef.current],
-      tileSize: 256,
-      minzoom: 6,
-      maxzoom: 12,
-      bounds: [3.2, 50.7, 7.3, 53.6],
-    });
-    map.addLayer(
-      {
-        id: LAYER,
-        type: "raster",
-        source: SOURCE,
-        paint: { "raster-opacity": OPACITY[resolvedTheme], "raster-resampling": "nearest", "raster-fade-duration": 150 },
-      },
-      beforeId,
-    );
-
-    return () => {
-      try {
-        if (map.getLayer(LAYER)) map.removeLayer(LAYER);
-        if (map.getSource(SOURCE)) map.removeSource(SOURCE);
-      } catch {
-        // The style may be mid-reload.
-      }
-    };
+    return addRaster(map, SOURCE, urlRef.current, 12, OPACITY[resolvedTheme]);
   }, [isLoaded, map, layer, resolvedTheme, ready]);
 
   // A new RIVM hour: swap every tile at once, so no two hours show together.
@@ -107,6 +115,20 @@ export function RivmLayer({ layer }: { layer: AreaLayer | null }) {
     urlRef.current = url;
     source.setTiles([url]);
   }, [isLoaded, map, layer, version]);
+
+  return null;
+}
+
+// RIVM's annual map (decision #37), on a 25 m grid, so tiles go up to zoom 14.
+// It changes once a year: the year in the URL is its version, no polling needed.
+export function AnnualRivmLayer({ layer }: { layer: AnnualLayer }) {
+  const { map, isLoaded, resolvedTheme } = useMap();
+
+  useEffect(() => {
+    if (!isLoaded || !map) return;
+    const url = `${window.location.origin}/api/rivm/jaar/${layer}/{z}/{x}/{y}?v=${ANNUAL_YEAR}`;
+    return addRaster(map, ANNUAL_ID, url, 14, ANNUAL_OPACITY[resolvedTheme]);
+  }, [isLoaded, map, layer, resolvedTheme]);
 
   return null;
 }

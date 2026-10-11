@@ -35,16 +35,16 @@ function loadHistory(id: number, measuredAt: string) {
 }
 
 // Rounds the y-axis up to a clean maximum that always includes the WHO line.
-function yAxis(values: number[], who: number) {
+export function yAxis(values: number[], who: number) {
   const top = Math.max(who * 1.25, ...values.map((v) => v * 1.1));
   const step = top > 60 ? 20 : top > 30 ? 10 : 5;
   const max = Math.ceil(top / step) * step;
   return { max, ticks: Array.from({ length: max / step + 1 }, (_, i) => i * step) };
 }
 
-const axisProps = { tickLine: false, axisLine: false, fontSize: 10 } as const;
+export const axisProps = { tickLine: false, axisLine: false, fontSize: 10 } as const;
 
-function TooltipBox({ title, children }: { title: string; children: React.ReactNode }) {
+export function TooltipBox({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="bg-popover grid gap-0.5 rounded-lg border px-2.5 py-1.5 text-xs shadow-lg">
       <span className="text-muted-foreground">{title}</span>
@@ -53,7 +53,7 @@ function TooltipBox({ title, children }: { title: string; children: React.ReactN
   );
 }
 
-function WhoLine({ who }: { who: number }) {
+export function WhoLine({ who }: { who: number }) {
   return (
     <ReferenceLine
       y={who}

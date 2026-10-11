@@ -5,16 +5,24 @@ import { MapPinIcon, SearchIcon, XIcon } from "lucide-react";
 
 import { useMap } from "@/components/ui/map";
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "@/components/ui/input-group";
-import { NO_INDEX_COLOR, lkiColor, lkiIndex, stationTitle, type StationReading } from "@/lib/air-quality";
+import { stationTitle, type StationReading } from "@/lib/air-quality";
 import { PLACE_TYPE_LABELS, PLACE_ZOOM, distanceKm, suggestPlaces, type Place } from "@/lib/geocode";
 import { cn } from "@/lib/utils";
 
-type Item = { kind: "station"; station: StationReading } | { kind: "place"; place: Place };
+// What the search needs of a station: hourly readings or annual averages both fit.
+type SearchStation = Pick<StationReading, "id" | "kind" | "name" | "external_id" | "municipality" | "longitude" | "latitude">;
+
+type Item<S> = { kind: "station"; station: S } | { kind: "place"; place: Place };
 
 const normalize = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 
-type Props = {
-  stations: StationReading[];
+type Props<S extends SearchStation> = {
+  stations: S[];
+  // The swatch next to a station, the same colour as its dot.
+  colorOf: (station: S) => string;
+  // Look for the nearest station when a place is chosen, and zoom to show both.
+  // Off in the annual view, which shows the value at the place itself.
+  nearest?: boolean;
   onSelectStation: (id: number) => void;
   // Called with the place and the nearest station, if any.
   onSelectPlace: (place: Place, nearestId: number | null) => void;
@@ -25,7 +33,15 @@ type Props = {
 // Search box on the map: measuring stations by name or code, and addresses
 // and places through PDOK Locatieserver. Choosing a place zooms to it and
 // selects the nearest station.
-export function MapSearch({ stations, onSelectStation, onSelectPlace, onClear, className }: Props) {
+export function MapSearch<S extends SearchStation>({
+  stations,
+  colorOf,
+  nearest: findNearest = true,
+  onSelectStation,
+  onSelectPlace,
+  onClear,
+  className,
+}: Props<S>) {
   const { map } = useMap();
   const listId = useId();
   const [query, setQuery] = useState("");
@@ -46,7 +62,7 @@ export function MapSearch({ stations, onSelectStation, onSelectPlace, onClear, c
       .slice(0, 3);
   }, [query, stations]);
 
-  const items: Item[] = [
+  const items: Item<S>[] = [
     ...stationHits.map((station) => ({ kind: "station" as const, station })),
     ...places.map((place) => ({ kind: "place" as const, place })),
   ];
@@ -82,7 +98,7 @@ export function MapSearch({ stations, onSelectStation, onSelectPlace, onClear, c
     }, 200);
   }
 
-  function choose(item: Item) {
+  function choose(item: Item<S>) {
     setOpen(false);
     if (item.kind === "station") {
       const { station } = item;
@@ -94,10 +110,9 @@ export function MapSearch({ stations, onSelectStation, onSelectPlace, onClear, c
 
     const { place } = item;
     setQuery(place.name);
-    const nearest = stations.reduce<StationReading | null>(
-      (best, s) => (!best || distanceKm(place, s) < distanceKm(place, best) ? s : best),
-      null,
-    );
+    const nearest = findNearest
+      ? stations.reduce<S | null>((best, s) => (!best || distanceKm(place, s) < distanceKm(place, best) ? s : best), null)
+      : null;
     onSelectPlace(place, nearest?.id ?? null);
     if (!map) return;
     if (nearest) {
@@ -172,11 +187,7 @@ export function MapSearch({ stations, onSelectStation, onSelectPlace, onClear, c
         <div id={listId} role="listbox" className="bg-popover mt-1.5 grid rounded-lg border p-1 shadow-lg">
           {items.map((item, i) => {
             const isStation = item.kind === "station";
-            // Citizen sensors are grey, as on the LKI map (decision #30).
-            const color =
-              isStation && item.station.kind === "professional"
-                ? lkiColor(lkiIndex(item.station.readings.lki?.value))?.bg ?? NO_INDEX_COLOR
-                : NO_INDEX_COLOR;
+            const color = isStation ? colorOf(item.station) : undefined;
             return (
               <div
                 key={isStation ? `s${item.station.id}` : item.place.id}

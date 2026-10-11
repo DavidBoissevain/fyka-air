@@ -3,12 +3,16 @@ import { Suspense } from "react";
 import { AirMap } from "@/components/air/air-map";
 import { SiteHeader } from "@/components/site-header";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getStationReadings } from "@/lib/air-data";
+import { getStationAnnual, getStationReadings } from "@/lib/air-data";
 import { getMapStyles } from "@/lib/map-style";
 
 async function AirMapWithData() {
-  const [stations, styles] = await Promise.all([getStationReadings(), getMapStyles()]);
-  return <AirMap stations={stations} styles={styles} />;
+  const [stations, annualStations, styles] = await Promise.all([
+    getStationReadings(),
+    getStationAnnual(),
+    getMapStyles(),
+  ]);
+  return <AirMap stations={stations} annualStations={annualStations} styles={styles} />;
 }
 
 export default function Home() {

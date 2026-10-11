@@ -27,26 +27,42 @@ const THEME = {
   dark: { outline: LKI_OUTLINE.dark, ring: "#F1F5F9" },
 } as const;
 
-type Props = {
-  stations: StationReading[];
-  // The LKI, or one pollutant's hourly value in its LKI sub-index bands (decision #27).
-  colorBy: "lki" | BandQuantity;
+// What a dot needs; the colour and drawing order come from `paint`.
+type Dot = Pick<StationReading, "id" | "kind" | "longitude" | "latitude">;
+
+// A dot's colour, and its rank: higher ranks are drawn on top.
+export type Paint<T extends Dot> = (station: T) => { color: string; rank: number };
+
+type Props<T extends Dot> = {
+  stations: T[];
+  // Keep it stable (useMemo), or the dots are rebuilt on every render.
+  paint: Paint<T>;
   selectedId: number | null;
   onSelect: (id: number | null) => void;
   // A click on the map that hits no station.
   onMapClick?: (lngLat: MapLibreGL.LngLat) => void;
 };
 
-function dotIndex(station: StationReading, colorBy: Props["colorBy"]) {
-  return colorBy === "lki"
-    ? lkiIndex(station.readings.lki?.value)
-    : subIndex(colorBy, station.readings[colorBy]?.value);
+// The hourly map: the LKI, or one pollutant's hourly value in its LKI sub-index
+// bands (decision #27). A citizen sensor's LKI covers fine dust only, so on
+// the LKI it's grey, like a pollutant it doesn't measure: only complete
+// indices get a colour (decision #30).
+export function lkiPaint(colorBy: "lki" | BandQuantity): Paint<StationReading> {
+  return (s) => {
+    const index =
+      colorBy === "lki"
+        ? s.kind === "citizen"
+          ? null
+          : lkiIndex(s.readings.lki?.value)
+        : subIndex(colorBy, s.readings[colorBy]?.value);
+    return { color: lkiColor(index)?.bg ?? NO_INDEX_COLOR, rank: index ?? 0 };
+  };
 }
 
-// Official stations as large LKI-coloured dots, citizen sensors as small dots
-// underneath (grey on the LKI), both with a thin grey outline. Higher values are drawn on top,
-// so problem spots stay visible in dense areas.
-export function StationLayer({ stations, colorBy, selectedId, onSelect, onMapClick }: Props) {
+// Official stations as large dots, citizen sensors as small dots underneath,
+// both with a thin grey outline. Higher values are drawn on top, so problem
+// spots stay visible in dense areas.
+export function StationLayer<T extends Dot>({ stations, paint, selectedId, onSelect, onMapClick }: Props<T>) {
   const { map, isLoaded, resolvedTheme } = useMap();
   const colors = THEME[resolvedTheme];
 
@@ -54,17 +70,15 @@ export function StationLayer({ stations, colorBy, selectedId, onSelect, onMapCli
     () => ({
       type: "FeatureCollection",
       features: stations.map((s) => {
-        // A citizen sensor's LKI covers fine dust only, so on the LKI it's grey,
-        // like a pollutant it doesn't measure: only complete indices get a colour (decision #30).
-        const index = colorBy === "lki" && s.kind === "citizen" ? null : dotIndex(s, colorBy);
+        const { color, rank } = paint(s);
         return {
           type: "Feature",
           geometry: { type: "Point", coordinates: [s.longitude, s.latitude] },
-          properties: { id: s.id, kind: s.kind, lki: index ?? 0, color: lkiColor(index)?.bg ?? NO_INDEX_COLOR },
+          properties: { id: s.id, kind: s.kind, rank, color },
         };
       }),
     }),
-    [stations, colorBy],
+    [stations, paint],
   );
 
   // Latest values for the setup effect below, which only re-runs on style loads.
@@ -85,7 +99,7 @@ export function StationLayer({ stations, colorBy, selectedId, onSelect, onMapCli
       type: "circle",
       source: SOURCE,
       filter: ["==", ["get", "kind"], "citizen"],
-      layout: { "circle-sort-key": ["get", "lki"] },
+      layout: { "circle-sort-key": ["get", "rank"] },
       paint: {
         "circle-radius": ["interpolate", ["linear"], ["zoom"], 6, 2.8, 11, 6],
         "circle-color": ["get", "color"],
@@ -99,7 +113,7 @@ export function StationLayer({ stations, colorBy, selectedId, onSelect, onMapCli
       type: "circle",
       source: SOURCE,
       filter: ["==", ["get", "kind"], "professional"],
-      layout: { "circle-sort-key": ["get", "lki"] },
+      layout: { "circle-sort-key": ["get", "rank"] },
       paint: {
         "circle-radius": ["interpolate", ["linear"], ["zoom"], 6, 6, 11, 11],
         "circle-color": ["get", "color"],
