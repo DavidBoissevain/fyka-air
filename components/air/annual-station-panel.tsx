@@ -52,7 +52,7 @@ function AnnualSummary({ station, layer }: { station: AnnualStation; layer: Annu
     const other = ANNUAL_LAYERS.find((l) => l.id !== layer)!;
     const otherMeasured = annualValue(station, other.id, ANNUAL_YEAR)?.kind === "value";
     title = NOT_MEASURED[layer];
-    text = `Dit station meet geen ${name}. Op de kaart is het grijs.${otherMeasured ? ` Kies ${QUANTITY_NAMES[other.id]} om zijn jaargemiddelde te zien.` : ""}`;
+    text = `Dit station meet geen ${name}. Daarom staat het niet op deze kaart.${otherMeasured ? ` Kies ${QUANTITY_NAMES[other.id]} om zijn jaargemiddelde te zien.` : ""}`;
   }
 
   const color = value?.kind === "value" ? annualColor(layer, value.mean) : null;

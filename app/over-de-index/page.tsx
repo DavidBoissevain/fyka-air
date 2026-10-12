@@ -13,18 +13,23 @@ export const metadata: Metadata = {
 };
 
 // The map's dots: large for official stations, small for citizen sensors.
-function Dot({ large, grey }: { large?: boolean; grey?: boolean }) {
+// `absent`: not on the index map, drawn as an empty dashed circle.
+function Dot({ large, grey, absent }: { large?: boolean; grey?: boolean; absent?: boolean }) {
   return (
     <i
-      className={cn("shrink-0 rounded-full border border-[#8C939D] dark:border-[#64748B]", large ? "size-3.5" : "size-2")}
-      style={{ background: grey ? NO_INDEX_COLOR : LKI_COLORS[3].bg }}
+      className={cn(
+        "shrink-0 rounded-full border border-[#8C939D] dark:border-[#64748B]",
+        large ? "size-3.5" : "size-2",
+        absent && "border-dashed",
+      )}
+      style={{ background: absent ? "transparent" : grey ? NO_INDEX_COLOR : LKI_COLORS[3].bg }}
       aria-hidden
     />
   );
 }
 
-// Which dots get a colour on the index map (decision #30).
-const DOTS: { large?: boolean; grey?: boolean; who: string; what: string }[] = [
+// Which dots get a colour on the index map (decisions #30, #44).
+const DOTS: { large?: boolean; grey?: boolean; absent?: boolean; who: string; what: string }[] = [
   { large: true, who: "Meetstation dat ozon meet", what: "Kleur: de index uit de eigen metingen." },
   {
     large: true,
@@ -49,9 +54,9 @@ const DOTS: { large?: boolean; grey?: boolean; who: string; what: string }[] = [
     what: "Grijs. Bij een paar stations rekent Luchtmeetnet de ozon nooit mee, dus de index is te laag als ozon de doorslag geeft.",
   },
   {
-    grey: true,
+    absent: true,
     who: "Burgersensor",
-    what: "Grijs. Meet alleen fijnstof, dus geen volledige index. Kies de kaart PM2,5 of PM10 om ze in kleur te zien.",
+    what: "Niet op de indexkaart. Meet alleen fijnstof, dus geen volledige index. Kies de kaart PM2,5 of PM10 om ze te zien.",
   },
 ];
 
@@ -91,14 +96,14 @@ export default function OverDeIndex() {
           <h2 className="text-xl font-semibold">Welke stip krijgt een kleur?</h2>
           <p className="text-muted-foreground">
             Op de indexkaart krijgt een stip alleen een kleur als de index alle stoffen meeneemt, gemeten of geschat.
-            Een grijze stip heeft geen volledige index, net als een stip die de gekozen stof niet meet op de andere
-            kaarten.
+            Een grijze stip heeft nu geen volledige index. Wat de gekozen stof helemaal niet meet, staat niet op de
+            kaart, zoals burgersensoren op de indexkaart.
           </p>
           <ul className="grid gap-2">
             {DOTS.map((dot) => (
               <li key={dot.who} className="bg-card grid grid-cols-[1rem_minmax(0,1fr)] gap-x-3 rounded-lg border p-3.5">
                 <span className="grid h-6 place-items-center">
-                  <Dot large={dot.large} grey={dot.grey} />
+                  <Dot large={dot.large} grey={dot.grey} absent={dot.absent} />
                 </span>
                 <div className="grid gap-0.5">
                   <span className="font-medium">{dot.who}</span>

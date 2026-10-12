@@ -146,7 +146,7 @@ export function DataInfo({ stations, className }: { stations: StationReading[]; 
             <h3 className="font-semibold">Kleur van de stippen</h3>
             <p className="text-muted-foreground">
               Op de indexkaart krijgt een stip alleen een kleur als de index alle stoffen meeneemt. Burgersensoren meten
-              alleen fijnstof en zijn daar grijs.{" "}
+              alleen fijnstof en staan daarom op de fijnstofkaarten, niet op de indexkaart.{" "}
               <a href="/over-de-index" target="_blank" rel="noopener" className={cn(linkClass, "inline-flex items-center gap-0.5")}>
                 Meer over de index
                 <ArrowUpRightIcon className="size-3.5" aria-hidden />

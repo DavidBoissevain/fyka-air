@@ -194,7 +194,7 @@ export function StationDetails({ station, place, newestCitizen, onClose }: Detai
         {citizen && (
           <p className="text-muted-foreground text-xs">
             Index op basis van fijnstof (24-uursgemiddelde). Officiële meetstations rekenen ook stikstofdioxide en
-            ozon mee, en kunnen daardoor hoger uitkomen. Daarom is de stip op de indexkaart grijs.
+            ozon mee, en kunnen daardoor hoger uitkomen. Daarom staat deze sensor niet op de indexkaart.
           </p>
         )}
         {/* Decision #30: Luchtmeetnet estimates ozone for stations without a sensor, and the view

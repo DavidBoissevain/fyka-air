@@ -13,7 +13,7 @@ import { MapSearch } from "@/components/air/map-search";
 import { PeriodSwitch } from "@/components/air/period-switch";
 import { AnnualPointValue, PointValue } from "@/components/air/point-value";
 import { AnnualRivmLayer, RivmLayer } from "@/components/air/rivm-layer";
-import { StationLayer, lkiPaint, type Paint } from "@/components/air/station-layer";
+import { StationLayer, lkiPaint, onHourlyMap, type Paint } from "@/components/air/station-layer";
 import { Overview, StationDetails } from "@/components/air/station-panel";
 import {
   ANNUAL_LAYERS,
@@ -83,20 +83,24 @@ function Legend({ layer }: { layer: MapLayer }) {
           <i className="size-3 rounded-full border border-[#8C939D] dark:border-[#64748B]" style={{ background: LKI_COLORS[1].bg }} />
           Meetstation
         </span>
-        <span className="inline-flex items-center gap-1.5">
-          <i className="size-1.75 rounded-full border border-[#8C939D] dark:border-[#64748B]" style={{ background: LKI_COLORS[1].bg }} />
-          Burgersensor
-        </span>
+        {/* Citizen sensors only show on the fine dust layers (decision #44). */}
+        {(layer === "pm25" || layer === "pm10") && (
+          <span className="inline-flex items-center gap-1.5">
+            <i className="size-1.75 rounded-full border border-[#8C939D] dark:border-[#64748B]" style={{ background: LKI_COLORS[1].bg }} />
+            Burgersensor
+          </span>
+        )}
         <span className="inline-flex items-center gap-1.5">
           <i className="size-3 rounded-full border border-[#8C939D] dark:border-[#64748B]" style={{ background: NO_INDEX_COLOR }} />
-          {/* Grey: no (complete) value for this map, e.g. citizen sensors on the LKI (decision #30). */}
-          {pollutant ? "Niet gemeten" : "Geen volledige index"}
+          {/* Grey: a station that measures this layer but has no (complete) value right now. */}
+          {pollutant ? "Nu geen meting" : "Nu geen volledige index"}
         </span>
         <span className="inline-flex items-center gap-1.5">
           <i className="size-3 rounded-xs opacity-60" style={{ background: `linear-gradient(90deg, ${LKI_COLORS[2].bg}, ${LKI_COLORS[4].bg})` }} />
           Gebied: berekend door het RIVM
         </span>
       </div>
+      {layer === "lki" && <span className="text-muted-foreground">Burgersensoren zie je op de kaart Fijnstof (PM2,5).</span>}
     </div>
   );
 }
@@ -221,6 +225,9 @@ export function AirMap({ stations, annualStations, styles }: Props) {
   );
   const panelOpen = annual ? annualSelected !== null : selected !== null || overviewOpen;
   const nowPaint = useMemo(() => lkiPaint(mapLayer), [mapLayer]);
+  // The hourly map leaves out what a station never measures (#44); the panel
+  // still finds any station, so an open one stays open when the layer changes.
+  const nowShown = useMemo(() => stations.filter(onHourlyMap(mapLayer)), [stations, mapLayer]);
   const yearPaint = useMemo(() => annualPaint(annualLayer), [annualLayer]);
   const nowColor = useCallback((s: StationReading) => lkiPaint("lki")(s).color, []);
   const yearColor = useCallback((s: AnnualStation) => yearPaint(s).color, [yearPaint]);
@@ -281,7 +288,7 @@ export function AirMap({ stations, annualStations, styles }: Props) {
             />
           ) : (
             <StationLayer
-              stations={stations}
+              stations={nowShown}
               paint={nowPaint}
               selectedId={selectedId}
               onSelect={selectStation}
@@ -313,7 +320,7 @@ export function AirMap({ stations, annualStations, styles }: Props) {
             />
           ) : (
             <MapSearch
-              stations={stations}
+              stations={nowShown}
               colorOf={nowColor}
               onSelectStation={selectStation}
               onSelectPlace={(chosen, nearestId) => {

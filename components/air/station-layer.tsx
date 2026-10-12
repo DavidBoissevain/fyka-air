@@ -59,6 +59,21 @@ export function lkiPaint(colorBy: "lki" | BandQuantity): Paint<StationReading> {
   };
 }
 
+// Which stations the hourly map shows on a layer (decision #44): what a station
+// never measures is left out, but an official station that measures the layer
+// and has no (complete) value right now stays, as a grey dot.
+// - Index: official stations only. A citizen sensor's index covers fine dust only.
+// - Pollutant: official stations that list it among their components; citizen
+//   sensors with a current value, except NO2, which Samen Meten doesn't calibrate.
+export function onHourlyMap(layer: "lki" | BandQuantity) {
+  return (s: StationReading) => {
+    if (s.kind === "citizen") return layer !== "lki" && layer !== "no2" && s.readings[layer] !== undefined;
+    if (layer === "lki" || s.readings[layer]) return true;
+    // Luchtmeetnet's components use the same names in capitals (PM25, NO2, O3).
+    return s.details.components?.includes(layer.toUpperCase()) ?? false;
+  };
+}
+
 // Official stations as large dots, citizen sensors as small dots underneath,
 // both with a thin grey outline. Higher values are drawn on top, so problem
 // spots stay visible in dense areas.
