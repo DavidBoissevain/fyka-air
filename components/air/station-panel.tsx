@@ -21,6 +21,7 @@ import {
   lkiColor,
   lkiIndex,
   stationTitle,
+  type MapLayer,
   type Quantity,
   type StationReading,
 } from "@/lib/air-quality";
@@ -155,10 +156,12 @@ type DetailsProps = {
   place?: Place | null;
   // The newest Samen Meten hour on the map; a citizen sensor behind it is late.
   newestCitizen: string | null;
+  // The map's layer: the chart opens on that pollutant.
+  layer: MapLayer;
   onClose: () => void;
 };
 
-export function StationDetails({ station, place, newestCitizen, onClose }: DetailsProps) {
+export function StationDetails({ station, place, newestCitizen, layer, onClose }: DetailsProps) {
   const citizen = station.kind === "citizen";
   // Official stations list all four pollutants (showing what they don't measure);
   // sensors only what they measure.
@@ -222,7 +225,7 @@ export function StationDetails({ station, place, newestCitizen, onClose }: Detai
       </div>
 
       <Suspense key={station.id} fallback={<Skeleton className="h-60 rounded-lg" />}>
-        <StationChart station={station} />
+        <StationChart key={layer} station={station} layer={layer} />
       </Suspense>
     </div>
   );

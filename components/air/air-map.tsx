@@ -409,7 +409,13 @@ export function AirMap({ stations, annualStations, styles }: Props) {
           {annualSelected ? (
             <AnnualStationDetails station={annualSelected} layer={annualLayer} onClose={() => setSelectedId(null)} />
           ) : selected ? (
-            <StationDetails station={selected} place={place} newestCitizen={newestCitizen} onClose={() => setSelectedId(null)} />
+            <StationDetails
+              station={selected}
+              place={place}
+              newestCitizen={newestCitizen}
+              layer={mapLayer}
+              onClose={() => setSelectedId(null)}
+            />
           ) : (
             <Overview stations={stations} onClose={() => setOverviewOpen(false)} />
           )}

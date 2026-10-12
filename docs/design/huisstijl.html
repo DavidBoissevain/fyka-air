@@ -726,7 +726,7 @@ footer { font-size: var(--t-xs); color: var(--muted); display: grid; gap: 4px; m
     <div class="cols-2">
       <div class="sheet">
         <h3>Official or citizen</h3>
-        <p class="lead">Official stations are large dots, citizen sensors small ones, both with a thin grey outline. On the index map, citizen sensors are grey: they only measure fine dust, so they have no complete index. The badge in the panel names the source in words.</p>
+        <p class="lead">Official stations are large dots, citizen sensors small ones, both with a thin grey outline. Citizen sensors only measure fine dust, so in the app they appear only on the fine dust maps (PM2,5 and PM10), not on the index map; what a station never measures is left out, and grey means an official station without a complete value right now (decision #44). This example map keeps the sensors, in grey, so you can open their panel. The badge in the panel names the source in words.</p>
       </div>
       <div class="sheet">
         <h3>Calibrated first, raw on request</h3>
@@ -1087,7 +1087,8 @@ footer { font-size: var(--t-xs); color: var(--muted); display: grid; gap: 4px; m
   function fc(list) {
     return {
       type: "FeatureCollection",
-      // Citizen sensors have a fine-dust-only index, so they are grey on the index map (decision #30).
+      // Example only: in the app, citizen sensors are left off the index map (decision #44). They stay
+      // here, in grey, so their panel can be opened.
       features: list.map(function (s) { return { type: "Feature", properties: { id: s.id, color: s.kind === "sensor" ? "#70757F" : LKI[s.lki - 1].c }, geometry: { type: "Point", coordinates: [s.lon, s.lat] } }; })
     };
   }

@@ -13,6 +13,7 @@ import {
   formatNumber,
   formatTime,
   type ChartQuantity,
+  type MapLayer,
   type StationHistory,
   type StationReading,
 } from "@/lib/air-quality";
@@ -146,12 +147,15 @@ function WeekChart({ days, who }: { days: { day: string; v: number | null; hours
   );
 }
 
-export function StationChart({ station }: { station: StationReading }) {
+// Opens on the map's pollutant layer when the station measures it, otherwise
+// on PM2.5 (the index layer) or the first pollutant it has.
+export function StationChart({ station, layer }: { station: StationReading; layer: MapLayer }) {
   const history = use(loadHistory(station.id, station.measured_at));
   const available = CHART_QUANTITIES.filter((q) => history?.hourly[q] && WHO_GUIDELINE[q]);
-  const [quantity, setQuantity] = useState<ChartQuantity | undefined>(
-    available.includes("pm25") ? "pm25" : available[0],
-  );
+  const [quantity, setQuantity] = useState<ChartQuantity | undefined>(() => {
+    const fromLayer = available.find((q) => q === layer);
+    return fromLayer ?? (available.includes("pm25") ? "pm25" : available[0]);
+  });
   const [period, setPeriod] = useState<"day" | "week">("day");
 
   if (!history) {
