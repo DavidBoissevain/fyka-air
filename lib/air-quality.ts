@@ -262,6 +262,9 @@ export type AnnualStation = Pick<
 export const ANNUAL_FIRST_YEAR = 2012;
 export const ANNUAL_LAST_YEAR = 2025;
 export const MIN_ANNUAL_COVERAGE = 0.75;
+// Fewer valid years than this show a sentence instead of a chart: two bars
+// can't tell a trend from one year's swing (decision #43).
+export const MIN_TREND_YEARS = 3;
 
 export function hoursInYear(year: number) {
   return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0 ? 8784 : 8760;

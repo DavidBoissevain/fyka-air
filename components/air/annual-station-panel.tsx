@@ -13,6 +13,7 @@ import {
   ANNUAL_LAST_YEAR,
   ANNUAL_LAYERS,
   ANNUAL_YEAR,
+  MIN_TREND_YEARS,
   QUANTITY_NAMES,
   annualCategory,
   annualColor,
@@ -122,7 +123,8 @@ const YEAR_TICKS = [2012, 2015, 2020, 2025];
 type YearPoint = { year: number; v: number | null; share: number };
 
 // Measured annual averages from ANNUAL_FIRST_YEAR on, one bar per year in its
-// annual colour; a year with too few measurements is a gap.
+// annual colour; a year with too few measurements is a gap. With fewer than
+// MIN_TREND_YEARS valid years there's no trend to show, so it says so instead.
 function YearChart({ station, initial }: { station: AnnualStation; initial: AnnualLayer }) {
   const measured = ANNUAL_LAYERS.filter((l) => station.annual[l.id]).map((l) => l.id);
   const [chosen, setChosen] = useState<AnnualLayer>(initial);
@@ -137,6 +139,8 @@ function YearChart({ station, initial }: { station: AnnualStation; initial: Annu
   }
   const values = points.flatMap((p) => (p.v === null ? [] : [p.v]));
   const { max, ticks } = yAxis(values, who);
+  const validYears = points.filter((p) => p.v !== null).map((p) => p.year);
+  const name = QUANTITY_NAMES[layer];
 
   return (
     <div className="grid gap-3">
@@ -155,9 +159,12 @@ function YearChart({ station, initial }: { station: AnnualStation; initial: Annu
         )}
       </div>
 
-      {values.length === 0 ? (
+      {validYears.length < MIN_TREND_YEARS ? (
         <p className="bg-muted text-muted-foreground rounded-lg p-3.5 text-sm">
-          Nog geen jaar met genoeg metingen voor {QUANTITY_NAMES[layer]}.
+          {validYears.length === 0
+            ? `Nog geen jaar met genoeg metingen van ${name}.`
+            : `Alleen voor ${validYears.join(" en ")} zijn er genoeg metingen van ${name}.`}{" "}
+          Voor een verloop zijn minstens {MIN_TREND_YEARS} jaar nodig.
         </p>
       ) : (
         <ChartContainer config={config} className="aspect-auto h-44 w-full">
@@ -192,7 +199,9 @@ function YearChart({ station, initial }: { station: AnnualStation; initial: Annu
         </ChartContainer>
       )}
 
-      <p className="text-muted-foreground text-xs">Jaargemiddelden {QUANTITY_NAMES[layer]} in µg/m³.</p>
+      {validYears.length >= MIN_TREND_YEARS && (
+        <p className="text-muted-foreground text-xs">Jaargemiddelden {name} in µg/m³.</p>
+      )}
 
       {/* sr-only on a wrapper: a table ignores the 1px height and overflow. */}
       <div className="sr-only">

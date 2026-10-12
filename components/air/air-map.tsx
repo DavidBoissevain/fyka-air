@@ -171,10 +171,6 @@ function AnnualLegend({ layer }: { layer: AnnualLayer }) {
           Meetstation (gemeten)
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <i className="size-3 rounded-full border border-[#8C939D] dark:border-[#64748B]" style={{ background: NO_INDEX_COLOR }} />
-          Niet gemeten
-        </span>
-        <span className="inline-flex items-center gap-1.5">
           <i className="size-3 rounded-xs opacity-70" style={{ background: `linear-gradient(90deg, ${bands[1].color}, ${bands[n - 3].color})` }} />
           Gebied: berekend door het RIVM
         </span>
@@ -183,8 +179,12 @@ function AnnualLegend({ layer }: { layer: AnnualLayer }) {
   );
 }
 
-// The annual view's dots (decision #42): the measured annual average of the
-// map's year in RIVM's colours, grey without one. Higher values on top.
+// The annual view's dots (decisions #42, #43): only stations with a measured
+// annual average for the map's year, in RIVM's colours. Higher values on top.
+function hasAnnualValue(s: AnnualStation, layer: AnnualLayer) {
+  return annualValue(s, layer, ANNUAL_YEAR)?.kind === "value";
+}
+
 function annualPaint(layer: AnnualLayer): Paint<AnnualStation> {
   return (s) => {
     const value = annualValue(s, layer, ANNUAL_YEAR);
@@ -212,7 +212,13 @@ export function AirMap({ stations, annualStations, styles }: Props) {
   const [probe, setProbe] = useState<{ longitude: number; latitude: number } | null>(null);
   // The selection is kept across modes; each mode looks it up in its own list.
   const selected = annual ? null : stations.find((s) => s.id === selectedId) ?? null;
+  // The panel can show any annual station (it explains a missing value), the
+  // map and search only those with a value for this layer: no grey dots (#43).
   const annualSelected = annual ? annualStations.find((s) => s.id === selectedId) ?? null : null;
+  const annualShown = useMemo(
+    () => annualStations.filter((s) => hasAnnualValue(s, annualLayer)),
+    [annualStations, annualLayer],
+  );
   const panelOpen = annual ? annualSelected !== null : selected !== null || overviewOpen;
   const nowPaint = useMemo(() => lkiPaint(mapLayer), [mapLayer]);
   const yearPaint = useMemo(() => annualPaint(annualLayer), [annualLayer]);
@@ -266,7 +272,7 @@ export function AirMap({ stations, annualStations, styles }: Props) {
           {annual ? <AnnualRivmLayer layer={annualLayer} /> : <RivmLayer layer={mapLayer} />}
           {annual ? (
             <StationLayer
-              stations={annualStations}
+              stations={annualShown}
               paint={yearPaint}
               selectedId={selectedId}
               onSelect={selectStation}
@@ -292,7 +298,7 @@ export function AirMap({ stations, annualStations, styles }: Props) {
               header, and clear of its two buttons on the right. */}
           {annual ? (
             <MapSearch
-              stations={annualStations}
+              stations={annualShown}
               colorOf={yearColor}
               // A place shows the calculated annual value there, not the nearest station.
               nearest={false}
