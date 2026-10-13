@@ -22,7 +22,8 @@ export function LayerPicker<Id extends string>({
   period,
   className,
 }: {
-  layers: readonly { id: Id; label: string }[];
+  // short: the name on the button on phones, where it shares a row with the period switch.
+  layers: readonly { id: Id; label: string; short: string }[];
   value: Id;
   onChange: (layer: Id) => void;
   // Shown after the layer's name, such as the year of an annual map.
@@ -33,6 +34,7 @@ export function LayerPicker<Id extends string>({
   const [guideOpen, setGuideOpen] = useState(false);
   const active = layers.find((l) => l.id === value) ?? layers[0];
   const name = period ? `${active.label} · ${period}` : active.label;
+  const shortName = period ? `${active.short} · ${period}` : active.short;
 
   return (
     <>
@@ -41,15 +43,16 @@ export function LayerPicker<Id extends string>({
           render={
             <Button
               variant="outline"
-              className={cn("bg-card dark:bg-card h-10 max-w-full gap-2 px-3 shadow-lg", className)}
+              className={cn("bg-card dark:bg-card h-10 max-w-full gap-2 px-3 shadow-lg max-sm:gap-1.5 max-sm:px-2.5", className)}
               aria-label={`Kaartlaag: ${name}. Kies een andere kaartlaag`}
             />
           }
         >
           <LayersIcon />
-          <span className="text-muted-foreground hidden sm:inline">Kaart:</span>
-          <span className="truncate font-semibold">{name}</span>
-          <ChevronDownIcon className="text-muted-foreground" />
+          <span className="truncate font-semibold sm:hidden">{shortName}</span>
+          <span className="hidden truncate font-semibold sm:inline">{name}</span>
+          {/* At the far end when the button is stretched to fill a row. */}
+          <ChevronDownIcon className="text-muted-foreground ml-auto" />
         </PopoverTrigger>
         <PopoverContent align="start" className="max-h-(--available-height) w-[min(18rem,calc(100vw-2rem))] gap-2 overflow-y-auto p-2">
           <RadioGroup

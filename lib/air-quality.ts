@@ -127,35 +127,40 @@ export function categoryRanges(quantity: BandQuantity) {
 // What the map colours by: the area layer (RIVM, decision #26) and the dots.
 // Ordered by importance for
 // health (decision #28): the overall index first, then PM2.5, NO2, O3, PM10.
-// hint: the guide's one line.
+// short: the layer button's name on phones; hint: the guide's one line.
 export const MAP_LAYERS = [
   {
     id: "lki",
     label: "Luchtkwaliteitsindex",
+    short: "Index",
     hint: "Begin hier om de kwaliteit van nu te bepalen: de stof die het slechtst scoort, bepaalt de index.",
     legend: "Luchtkwaliteitsindex",
   },
   {
     id: "pm25",
     label: "Fijnstof (PM2,5)",
+    short: "PM2,5",
     hint: "Kleine deeltjes die diep in je longen en bloed komen.",
     legend: "Fijnstof PM2,5 per uur, in µg/m³",
   },
   {
     id: "no2",
     label: "Stikstofdioxide (NO₂)",
+    short: "NO₂",
     hint: "Vooral langs drukke wegen. Belangrijk bij astma.",
     legend: "Stikstofdioxide NO₂ per uur, in µg/m³",
   },
   {
     id: "o3",
     label: "Ozon (O₃)",
+    short: "O₃",
     hint: "Hoog op warme, zonnige middagen. Let op bij buiten sporten.",
     legend: "Ozon O₃ per uur, in µg/m³",
   },
   {
     id: "pm10",
     label: "Fijnstof (PM10)",
+    short: "PM10",
     hint: "Prikkelt neus, keel en luchtwegen.",
     legend: "Fijnstof PM10 per uur, in µg/m³",
   },
@@ -186,6 +191,7 @@ export const ANNUAL_LAYERS = [
   {
     id: "pm25",
     label: "Fijnstof (PM2,5)",
+    short: "PM2,5",
     hint: "Kleine deeltjes die diep in je longen en bloed komen. Weegt het zwaarst voor je gezondheid.",
     legend: `Fijnstof PM2,5, jaargemiddelde ${ANNUAL_YEAR}, in µg/m³`,
     rivmLayer: `rivm_nsl_20260401_gm_PM25${ANNUAL_YEAR}`,
@@ -205,6 +211,7 @@ export const ANNUAL_LAYERS = [
   {
     id: "no2",
     label: "Stikstofdioxide (NO₂)",
+    short: "NO₂",
     hint: "Vooral langs drukke wegen. Een maat voor uitlaatgassen.",
     legend: `Stikstofdioxide NO₂, jaargemiddelde ${ANNUAL_YEAR}, in µg/m³`,
     rivmLayer: `rivm_nsl_20260401_gm_NO2${ANNUAL_YEAR}`,

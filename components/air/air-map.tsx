@@ -368,7 +368,7 @@ export function AirMap({ stations, annualStations, styles }: Props) {
                 setProbe({ longitude: chosen.longitude, latitude: chosen.latitude });
               }}
               onClear={() => setPlace(null)}
-              className="top-3 right-34 left-6 max-w-100 md:right-38"
+              className="top-3 right-34 left-6 max-w-112 md:right-38"
             />
           ) : (
             <MapSearch
@@ -378,7 +378,7 @@ export function AirMap({ stations, annualStations, styles }: Props) {
               // Only zooms; the panel keeps what it showed.
               onSelectPlace={setPlace}
               onClear={() => setPlace(null)}
-              className="top-3 right-34 left-6 max-w-100 md:right-38"
+              className="top-3 right-34 left-6 max-w-112 md:right-38"
             />
           )}
           {probe && (
@@ -398,19 +398,22 @@ export function AirMap({ stations, annualStations, styles }: Props) {
             </MapPopup>
           )}
         </Map>
-        {/* Under the search box, aligned with the zoom controls on the right: the mode, then the layer. */}
-        <div className="pointer-events-none absolute top-17 left-6 z-10 flex max-w-[calc(100%-6.5rem)] flex-col items-start gap-2 md:top-19">
-          <PeriodSwitch value={annual ? "jaar" : "nu"} onChange={setMapPeriod} className="pointer-events-auto" />
+        {/* Under the search box, aligned with the zoom controls on the right: the
+            mode, then the layer, side by side (short labels on phones). From sm
+            the row is as wide as the search box (w-112) and the layer button
+            fills it, so their edges line up for every layer. */}
+        <div className="pointer-events-none absolute top-17 left-6 z-10 flex max-w-[calc(100%-6.5rem)] items-center gap-2 sm:w-112 md:top-19 lg:max-w-[calc(100%-var(--panel)-6.5rem)]">
+          <PeriodSwitch value={annual ? "jaar" : "nu"} onChange={setMapPeriod} className="pointer-events-auto shrink-0" />
           {annual ? (
             <LayerPicker
               layers={ANNUAL_LAYERS}
               value={annualLayer}
               onChange={setMapLayer}
               period={String(ANNUAL_YEAR)}
-              className="pointer-events-auto"
+              className="pointer-events-auto min-w-0 sm:flex-1 sm:justify-start"
             />
           ) : (
-            <LayerPicker layers={MAP_LAYERS} value={mapLayer} onChange={setMapLayer} className="pointer-events-auto" />
+            <LayerPicker layers={MAP_LAYERS} value={mapLayer} onChange={setMapLayer} className="pointer-events-auto min-w-0 sm:flex-1 sm:justify-start" />
           )}
         </div>
         {/* Legend bottom left, the data info button bottom right. On phones the

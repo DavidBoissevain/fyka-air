@@ -4,9 +4,10 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { MapPeriod } from "@/lib/air-quality";
 import { cn } from "@/lib/utils";
 
-const PERIODS: { id: MapPeriod; label: string }[] = [
-  { id: "nu", label: "Nu" },
-  { id: "jaar", label: "Jaargemiddelde" },
+// short: the label on phones, where the switch shares a row with the layer button.
+const PERIODS: { id: MapPeriod; label: string; short: string }[] = [
+  { id: "nu", label: "Nu", short: "Nu" },
+  { id: "jaar", label: "Jaargemiddelde", short: "Jaar" },
 ];
 
 /** The map's two modes (decision #36): the air of this hour, or the annual average. */
@@ -35,9 +36,11 @@ export function PeriodSwitch({
         <ToggleGroupItem
           key={p.id}
           value={p.id}
-          className="h-8 rounded-md px-3 font-medium aria-pressed:bg-brand-soft aria-pressed:text-brand-text aria-pressed:font-semibold"
+          aria-label={p.label}
+          className="h-8 rounded-md px-3 font-medium aria-pressed:bg-brand-soft aria-pressed:text-brand-text aria-pressed:font-semibold max-sm:px-2.5"
         >
-          {p.label}
+          <span className="sm:hidden">{p.short}</span>
+          <span className="hidden sm:inline">{p.label}</span>
         </ToggleGroupItem>
       ))}
     </ToggleGroup>
