@@ -6,7 +6,7 @@ import { MapPinIcon, SearchIcon, XIcon } from "lucide-react";
 import { useMap } from "@/components/ui/map";
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "@/components/ui/input-group";
 import { stationTitle, type StationReading } from "@/lib/air-quality";
-import { PLACE_TYPE_LABELS, PLACE_ZOOM, distanceKm, suggestPlaces, type Place } from "@/lib/geocode";
+import { PLACE_TYPE_LABELS, PLACE_ZOOM, suggestPlaces, type Place } from "@/lib/geocode";
 import { cn } from "@/lib/utils";
 
 // What the search needs of a station: hourly readings or annual averages both fit.
@@ -20,23 +20,17 @@ type Props<S extends SearchStation> = {
   stations: S[];
   // The swatch next to a station, the same colour as its dot.
   colorOf: (station: S) => string;
-  // Look for the nearest station when a place is chosen, and zoom to show both.
-  // Off in the annual view, which shows the value at the place itself.
-  nearest?: boolean;
   onSelectStation: (id: number) => void;
-  // Called with the place and the nearest station, if any.
-  onSelectPlace: (place: Place, nearestId: number | null) => void;
+  onSelectPlace: (place: Place) => void;
   onClear: () => void;
   className?: string;
 };
 
 // Search box on the map: measuring stations by name or code, and addresses
-// and places through PDOK Locatieserver. Choosing a place zooms to it and
-// selects the nearest station.
+// and places through PDOK Locatieserver. Choosing a place zooms to it.
 export function MapSearch<S extends SearchStation>({
   stations,
   colorOf,
-  nearest: findNearest = true,
   onSelectStation,
   onSelectPlace,
   onClear,
@@ -110,23 +104,8 @@ export function MapSearch<S extends SearchStation>({
 
     const { place } = item;
     setQuery(place.name);
-    const nearest = findNearest
-      ? stations.reduce<S | null>((best, s) => (!best || distanceKm(place, s) < distanceKm(place, best) ? s : best), null)
-      : null;
-    onSelectPlace(place, nearest?.id ?? null);
-    if (!map) return;
-    if (nearest) {
-      // Show both the place and its nearest station.
-      map.fitBounds(
-        [
-          [Math.min(place.longitude, nearest.longitude), Math.min(place.latitude, nearest.latitude)],
-          [Math.max(place.longitude, nearest.longitude), Math.max(place.latitude, nearest.latitude)],
-        ],
-        { padding: 80, maxZoom: PLACE_ZOOM[place.type], duration: 900 },
-      );
-    } else {
-      map.flyTo({ center: [place.longitude, place.latitude], zoom: PLACE_ZOOM[place.type], duration: 900 });
-    }
+    onSelectPlace(place);
+    map?.flyTo({ center: [place.longitude, place.latitude], zoom: PLACE_ZOOM[place.type], duration: 900 });
   }
 
   function clear() {

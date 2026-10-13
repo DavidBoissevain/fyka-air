@@ -33,6 +33,14 @@ export function inNetherlands(lon: number, lat: number) {
   return lon >= NL.minLon && lon <= NL.maxLon && lat >= NL.minLat && lat <= NL.maxLat;
 }
 
+// A coordinate from a point route's query, or null unless it has exactly the
+// decimals the map sends (POINT_DECIMALS). Otherwise random decimals would
+// skip the CDN cache and each cost a request to RIVM.
+export function pointParam(value: string | null, decimals: number) {
+  const n = Number(value);
+  return value !== null && Number.isFinite(n) && n.toFixed(decimals) === value ? n : null;
+}
+
 // Web Mercator (EPSG:3857): half the world's width in metres.
 const HALF = 20037508.342789244;
 const mercX = (lon: number) => (lon * HALF) / 180;

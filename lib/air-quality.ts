@@ -167,6 +167,11 @@ export type AreaLayer = MapLayer;
 // The map's two modes (decision #36): the air of this hour, or the annual average.
 export type MapPeriod = "nu" | "jaar";
 
+// Decimals of a clicked spot sent to the point routes: about 100 m for RIVM's
+// 125 m hourly grid, 10 m for its 25 m annual grid. The routes only accept
+// coordinates rounded like this, so each spot has one URL in the CDN cache.
+export const POINT_DECIMALS: Record<MapPeriod, number> = { nu: 3, jaar: 4 };
+
 // The annual view (decisions #36–#39): RIVM's 25 m map of the annual average,
 // the one Atlas Leefomgeving shows, in RIVM's own WHO colour scale. Only the
 // two pollutants that weigh most for long-term health.

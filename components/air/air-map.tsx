@@ -5,7 +5,7 @@ import { ChartBarIcon } from "lucide-react";
 import type { StyleSpecification } from "maplibre-gl";
 
 import { Button } from "@/components/ui/button";
-import { Map, MapControls, MapMarker, MapPopup, MarkerContent } from "@/components/ui/map";
+import { Map, MapControls, MapPopup } from "@/components/ui/map";
 import { AnnualStationDetails } from "@/components/air/annual-station-panel";
 import { DataInfo } from "@/components/air/data-info";
 import { LayerPicker } from "@/components/air/layer-picker";
@@ -100,7 +100,6 @@ function Legend({ layer }: { layer: MapLayer }) {
           Gebied: berekend door het RIVM
         </span>
       </div>
-      {layer === "lki" && <span className="text-muted-foreground">Burgersensoren zie je op de kaart Fijnstof (PM2,5).</span>}
     </div>
   );
 }
@@ -307,9 +306,8 @@ export function AirMap({ stations, annualStations, styles }: Props) {
             <MapSearch
               stations={annualShown}
               colorOf={yearColor}
-              // A place shows the calculated annual value there, not the nearest station.
-              nearest={false}
               onSelectStation={selectStation}
+              // A place shows the calculated annual value there.
               onSelectPlace={(chosen) => {
                 setPlace(chosen);
                 setSelectedId(null);
@@ -323,20 +321,11 @@ export function AirMap({ stations, annualStations, styles }: Props) {
               stations={nowShown}
               colorOf={nowColor}
               onSelectStation={selectStation}
-              onSelectPlace={(chosen, nearestId) => {
-                setPlace(chosen);
-                selectStation(nearestId);
-              }}
+              // Only zooms; the panel keeps what it showed.
+              onSelectPlace={setPlace}
               onClear={() => setPlace(null)}
               className="top-3 right-34 left-6 max-w-100 md:right-38"
             />
-          )}
-          {place && (
-            <MapMarker longitude={place.longitude} latitude={place.latitude}>
-              <MarkerContent>
-                <div className="bg-card border-foreground size-4 rounded-full border-[3px] shadow-md" aria-label={place.name} />
-              </MarkerContent>
-            </MapMarker>
           )}
           {probe && (
             <MapPopup

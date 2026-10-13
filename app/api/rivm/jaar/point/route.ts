@@ -1,11 +1,13 @@
-import { fetchAnnualPoint, inNetherlands } from "@/lib/rivm-map";
+import { POINT_DECIMALS } from "@/lib/air-quality";
+import { fetchAnnualPoint, inNetherlands, pointParam } from "@/lib/rivm-map";
 
 // RIVM's annual values at one spot, for the annual view's click popup.
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const lon = Number(searchParams.get("lon"));
-  const lat = Number(searchParams.get("lat"));
-  if (!Number.isFinite(lon) || !Number.isFinite(lat) || !inNetherlands(lon, lat)) {
+  const lon = pointParam(searchParams.get("lon"), POINT_DECIMALS.jaar);
+  const lat = pointParam(searchParams.get("lat"), POINT_DECIMALS.jaar);
+  if (lon === null || lat === null) return Response.json({ error: "Ongeldige plek" }, { status: 400 });
+  if (!inNetherlands(lon, lat)) {
     return Response.json({ error: "Plek buiten Nederland" }, { status: 400 });
   }
 

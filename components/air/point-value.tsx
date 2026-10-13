@@ -7,6 +7,7 @@ import {
   ANNUAL_LAYERS,
   ANNUAL_YEAR,
   BAND_QUANTITIES,
+  POINT_DECIMALS,
   QUANTITY_NAMES,
   annualCategory,
   annualColor,
@@ -24,9 +25,10 @@ import {
 import type { AnnualPointValues, PointValues } from "@/lib/rivm-map";
 
 // RIVM's values at the spot from one of our point routes, or null when they
-// couldn't be fetched; undefined while loading.
-function usePointValues<T>(path: string, longitude: number, latitude: number) {
-  const key = `${longitude.toFixed(5)},${latitude.toFixed(5)}`;
+// couldn't be fetched; undefined while loading. The route only accepts
+// coordinates with its period's POINT_DECIMALS.
+function usePointValues<T>(path: string, decimals: number, longitude: number, latitude: number) {
+  const key = `${longitude.toFixed(decimals)},${latitude.toFixed(decimals)}`;
   const [result, setResult] = useState<{ key: string; values: T | null } | null>(null);
 
   useEffect(() => {
@@ -87,7 +89,7 @@ function deciding(values: PointValues) {
 
 /** RIVM's calculated values at a clicked spot on the map (decision #26). */
 export function PointValue({ longitude, latitude, layer }: { longitude: number; latitude: number; layer: AreaLayer }) {
-  const values = usePointValues<PointValues>("/api/rivm/point", longitude, latitude);
+  const values = usePointValues<PointValues>("/api/rivm/point", POINT_DECIMALS.nu, longitude, latitude);
   if (values === undefined) return <Loading />;
 
   const value = values?.[layer];
@@ -146,7 +148,7 @@ export function AnnualPointValue({
   latitude: number;
   layer: AnnualLayer;
 }) {
-  const values = usePointValues<AnnualPointValues>("/api/rivm/jaar/point", longitude, latitude);
+  const values = usePointValues<AnnualPointValues>("/api/rivm/jaar/point", POINT_DECIMALS.jaar, longitude, latitude);
   if (values === undefined) return <Loading />;
 
   const value = values?.[layer];
