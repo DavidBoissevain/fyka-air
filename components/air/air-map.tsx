@@ -1,10 +1,8 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { ChartBarIcon } from "lucide-react";
 import type { StyleSpecification } from "maplibre-gl";
 
-import { Button } from "@/components/ui/button";
 import { Map, MapControls, MapPopup } from "@/components/ui/map";
 import { AnnualStationDetails } from "@/components/air/annual-station-panel";
 import { DataInfo } from "@/components/air/data-info";
@@ -14,7 +12,7 @@ import { PeriodSwitch } from "@/components/air/period-switch";
 import { AnnualPointValue, PointValue } from "@/components/air/point-value";
 import { AnnualRivmLayer, RivmLayer } from "@/components/air/rivm-layer";
 import { StationLayer, lkiPaint, onHourlyMap, type Paint } from "@/components/air/station-layer";
-import { Overview, StationDetails } from "@/components/air/station-panel";
+import { StationDetails } from "@/components/air/station-panel";
 import {
   ANNUAL_LAYERS,
   ANNUAL_YEAR,
@@ -206,7 +204,6 @@ type Props = {
 
 export function AirMap({ stations, annualStations, styles }: Props) {
   const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [overviewOpen, setOverviewOpen] = useState(false);
   const [place, setPlace] = useState<Place | null>(null);
   const mapLayer = useMapLayer();
   // The annual view (decision #36) shows RIVM's annual map without dots or panel.
@@ -222,7 +219,7 @@ export function AirMap({ stations, annualStations, styles }: Props) {
     () => annualStations.filter((s) => hasAnnualValue(s, annualLayer)),
     [annualStations, annualLayer],
   );
-  const panelOpen = annual ? annualSelected !== null : selected !== null || overviewOpen;
+  const panelOpen = annual ? annualSelected !== null : selected !== null;
   const nowPaint = useMemo(() => lkiPaint(mapLayer), [mapLayer]);
   // The hourly map leaves out what a station never measures (#44); the panel
   // still finds any station, so an open one stays open when the layer changes.
@@ -239,13 +236,9 @@ export function AirMap({ stations, annualStations, styles }: Props) {
     [stations],
   );
 
-  // A station replaces the overview, so closing it returns to the full map.
   function selectStation(id: number | null) {
     setSelectedId(id);
-    if (id !== null) {
-      setOverviewOpen(false);
-      setProbe(null);
-    }
+    if (id !== null) setProbe(null);
   }
 
   return (
@@ -359,25 +352,10 @@ export function AirMap({ stations, annualStations, styles }: Props) {
             <LayerPicker layers={MAP_LAYERS} value={mapLayer} onChange={setMapLayer} className="pointer-events-auto" />
           )}
         </div>
-        {/* Legend bottom left, buttons bottom right; on phones the buttons sit above the full-width legend. */}
+        {/* Legend bottom left, the data info button bottom right; on phones the button sits above the full-width legend. */}
         <div className="pointer-events-none absolute right-3 bottom-4 left-4 z-10 flex flex-col-reverse items-start gap-2 sm:flex-row sm:items-end sm:justify-between lg:right-[calc(var(--panel)+0.75rem)]">
           {annual ? <AnnualLegend layer={annualLayer} /> : <Legend layer={mapLayer} />}
-          <div className="pointer-events-auto flex gap-2 self-end sm:mb-4">
-            <DataInfo stations={stations} />
-            {!annual && !overviewOpen && (
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setSelectedId(null);
-                  setOverviewOpen(true);
-                }}
-                className="bg-card dark:bg-card h-10 gap-2 px-3.5 shadow-lg"
-              >
-                <ChartBarIcon />
-                Overzicht Nederland
-              </Button>
-            )}
-          </div>
+          <DataInfo stations={stations} className="pointer-events-auto self-end sm:mb-4" />
         </div>
         <div className="text-muted-foreground bg-card/80 absolute right-2 bottom-1.5 z-10 rounded px-1.5 text-[0.6875rem] lg:right-[calc(var(--panel)+0.5rem)]">
           OpenFreeMap · © OpenMapTiles · © OpenStreetMap ·{" "}
@@ -397,16 +375,16 @@ export function AirMap({ stations, annualStations, styles }: Props) {
         >
           {annualSelected ? (
             <AnnualStationDetails station={annualSelected} layer={annualLayer} onClose={() => setSelectedId(null)} />
-          ) : selected ? (
-            <StationDetails
-              station={selected}
-              place={place}
-              newestCitizen={newestCitizen}
-              layer={mapLayer}
-              onClose={() => setSelectedId(null)}
-            />
           ) : (
-            <Overview stations={stations} onClose={() => setOverviewOpen(false)} />
+            selected && (
+              <StationDetails
+                station={selected}
+                place={place}
+                newestCitizen={newestCitizen}
+                layer={mapLayer}
+                onClose={() => setSelectedId(null)}
+              />
+            )
           )}
         </aside>
       )}

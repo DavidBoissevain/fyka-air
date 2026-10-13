@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNow } from "@/hooks/use-now";
 import {
-  LKI_CATEGORIES,
   QUANTITY_NAMES,
   STATION_TYPES,
   WHO_GUIDELINE,
@@ -227,76 +226,6 @@ export function StationDetails({ station, place, newestCitizen, layer, onClose }
       <Suspense key={station.id} fallback={<Skeleton className="h-60 rounded-lg" />}>
         <StationChart key={layer} station={station} layer={layer} />
       </Suspense>
-    </div>
-  );
-}
-
-export function Overview({ stations: all, onClose }: { stations: StationReading[]; onClose: () => void }) {
-  // The category bars show official stations; sensors use a fine-dust-only index.
-  const stations = all.filter((s) => s.kind === "professional");
-  const sensorCount = all.length - stations.length;
-  const latest = all.reduce<string | null>(
-    (max, s) => (!max || s.measured_at > max ? s.measured_at : max),
-    null,
-  );
-  const counts = LKI_CATEGORIES.map((category) => ({
-    category,
-    count: stations.filter((s) => {
-      const index = lkiIndex(s.readings.lki?.value);
-      return index !== null && index >= category.from && index <= category.to;
-    }).length,
-  }));
-  const withIndex = counts.reduce((sum, c) => sum + c.count, 0);
-
-  return (
-    <div className="grid content-start gap-5">
-      <div className="grid gap-1.5">
-        <div className="flex items-start justify-between gap-2.5">
-          <div className="grid gap-1.5">
-            <span className="text-muted-foreground text-xs font-semibold tracking-[0.08em] uppercase">
-              Luchtkwaliteit nu
-            </span>
-            <h2 className="text-[1.75rem] leading-tight font-semibold tracking-tight">Nederland</h2>
-          </div>
-          <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="Sluiten" className="-mr-1.5">
-            <XIcon />
-          </Button>
-        </div>
-        <p className="text-muted-foreground text-sm">
-          {stations.length} officiële meetstations en {sensorCount.toLocaleString("nl-NL")} burgersensoren met een
-          recente meting.
-        </p>
-        {latest && <Freshness measuredAt={latest} />}
-      </div>
-
-      {withIndex > 0 && (
-        <div className="grid gap-2">
-          <h3 className="text-muted-foreground text-xs font-semibold tracking-[0.08em] uppercase">
-            Officiële meetstations
-          </h3>
-          {counts.map(({ category, count }) => (
-            <div key={category.name} className="grid grid-cols-[6.5rem_minmax(0,1fr)_2rem] items-center gap-3 text-sm">
-              <span className="font-medium">{category.name}</span>
-              <div className="bg-muted h-2 overflow-hidden rounded-full">
-                <i
-                  className="block h-full rounded-full ring-1 ring-black/15 ring-inset"
-                  style={{ width: `${(count / withIndex) * 100}%`, background: category.color }}
-                />
-              </div>
-              <span className="text-right tabular-nums">{count}</span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <p className="bg-muted rounded-lg p-3.5 text-sm">
-        Klik op een meetstation of burgersensor op de kaart om te zien wat er gemeten wordt.
-      </p>
-      <p className="text-muted-foreground text-xs">
-        De kleuren volgen de Luchtkwaliteitsindex (LKI) van het RIVM: van 1 (goed) tot 11 (zeer slecht).
-        Officiële metingen van Luchtmeetnet: RIVM, GGD&apos;s, DCMR en provincies. Burgersensoren via RIVM Samen
-        Meten, gekalibreerd door het RIVM.
-      </p>
     </div>
   );
 }

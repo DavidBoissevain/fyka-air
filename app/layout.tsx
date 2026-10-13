@@ -1,21 +1,35 @@
-import type { Metadata } from "next";
-import { Figtree, Geist_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
 import { ThemeProvider } from "@/components/theme-provider";
+import { SITE_URL } from "@/lib/links";
+import { figtree, geistMono } from "./fonts";
 import "./globals.css";
 
-const figtree = Figtree({
-  variable: "--font-figtree",
-  subsets: ["latin"],
-});
+const DESCRIPTION =
+  "Hoe schoon is de lucht bij jou? Elk uur de luchtkwaliteit in Nederland op de kaart, op basis van open data van het RIVM.";
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
+// Pages set their own title and canonical; the share preview image is
+// app/opengraph-image.tsx.
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "Fyka Air",
-  description: "Luchtkwaliteit in Nederland, op basis van open data van het RIVM.",
+  description: DESCRIPTION,
+  applicationName: "Fyka Air",
+  openGraph: {
+    type: "website",
+    siteName: "Fyka Air",
+    locale: "nl_NL",
+    title: "Fyka Air",
+    description: DESCRIPTION,
+  },
+  twitter: { card: "summary_large_image" },
+};
+
+// The browser bar follows the theme's background.
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#EEF1F5" },
+    { media: "(prefers-color-scheme: dark)", color: "#0F172A" },
+  ],
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

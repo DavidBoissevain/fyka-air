@@ -193,6 +193,16 @@ export function DataInfo({ stations, className }: { stations: StationReading[]; 
               Steun mij
             </a>
           </div>
+          <a
+            href="/privacy"
+            target="_blank"
+            rel="noopener"
+            className="text-muted-foreground hover:text-foreground inline-flex w-fit items-center gap-0.5 justify-self-center text-xs underline underline-offset-3"
+          >
+            Privacy: geen cookies, geen account
+            <ArrowUpRightIcon className="size-3" aria-hidden />
+            <span className="sr-only">(opent in een nieuw tabblad)</span>
+          </a>
         </DialogFooter>
       </DialogContent>
     </Dialog>

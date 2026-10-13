@@ -2,30 +2,12 @@
 
 import { ArrowRightIcon, CheckIcon, ClockIcon, HeartPulseIcon } from "lucide-react";
 
+import { LongTermBars } from "@/components/air/long-term-bars";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { setMapPeriod, useMapPeriod } from "@/hooks/use-map-period";
-import {
-  ANNUAL_LAYERS,
-  ANNUAL_YEAR,
-  LKI_COLORS,
-  MAP_LAYERS,
-  QUANTITY_NAMES,
-  type BandQuantity,
-  type MapPeriod,
-} from "@/lib/air-quality";
+import { ANNUAL_LAYERS, ANNUAL_YEAR, LKI_COLORS, MAP_LAYERS, type MapPeriod } from "@/lib/air-quality";
 import { cn } from "@/lib/utils";
-
-// How much each pollutant weighs for long-term health, as a bar length. A
-// simplified reading of well-established links (WHO 2021, EEA burden
-// estimates), not a medical score. PM10 is short because it largely overlaps PM2.5.
-const LONG_TERM: { quantity: BandQuantity; weight: number; label: string }[] = [
-  { quantity: "pm25", weight: 1, label: "zwaarst" },
-  { quantity: "no2", weight: 0.55, label: "zwaar" },
-  { quantity: "o3", weight: 0.2, label: "minder" },
-  { quantity: "pm10", weight: 0.2, label: "minder" },
-];
-const MAIN: BandQuantity[] = ["pm25", "no2"];
 
 function Card({
   icon,
@@ -122,26 +104,7 @@ export function LayerGuide({ open, onOpenChange }: { open: boolean; onOpenChange
             <p className="text-muted-foreground">
               Wat je jaren inademt, telt het zwaarst. Het jaargemiddelde van {ANNUAL_YEAR} laat zien hoe dat bij jou zit.
             </p>
-            <dl className="grid grid-cols-[2.75rem_1fr] items-center gap-x-2 gap-y-1 pt-1 text-xs">
-              {LONG_TERM.map(({ quantity, weight, label }) => {
-                const main = MAIN.includes(quantity);
-                return (
-                  <div key={quantity} className="contents">
-                    <dt className={cn("tabular-nums", main ? "font-semibold" : "text-muted-foreground")}>
-                      {QUANTITY_NAMES[quantity]}
-                    </dt>
-                    <dd>
-                      {/* steel-500 in light mode: the lighter steel token is under 3:1 against the card. */}
-                      <span
-                        className={cn("block h-2 rounded-xs", main ? "bg-[#5B7BAA] dark:bg-steel" : "bg-[#5B7BAA]/30 dark:bg-steel/30")}
-                        style={{ width: `${weight * 100}%` }}
-                      />
-                      <span className="sr-only">{label}</span>
-                    </dd>
-                  </div>
-                );
-              })}
-            </dl>
+            <LongTermBars className="pt-1" />
           </Card>
         </div>
 

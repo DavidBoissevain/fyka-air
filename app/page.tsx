@@ -1,10 +1,15 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
 
 import { AirMap } from "@/components/air/air-map";
 import { SiteHeader } from "@/components/site-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getStationAnnual, getStationReadings } from "@/lib/air-data";
 import { getMapStyles } from "@/lib/map-style";
+
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
 
 async function AirMapWithData() {
   const [stations, annualStations, styles] = await Promise.all([

@@ -60,7 +60,7 @@ export const LKI_OUTLINE = { light: "#8C939D", dark: "#64748B" } as const;
 export const NO_INDEX_COLOR = "#70757F";
 
 export const LKI_CATEGORIES = [
-  // color: the middle step of the category, for category-level marks like the overview bars.
+  // color: the middle step of the category, for category-level marks.
   { name: "Goed", from: 1, to: 3, color: "#2F74F0", advice: "Geen klachten te verwachten. Ga gerust naar buiten." },
   { name: "Matig", from: 4, to: 6, color: "#FFD84D", advice: "Mensen die gevoelig zijn voor luchtvervuiling kunnen klachten merken." },
   { name: "Onvoldoende", from: 7, to: 8, color: "#FF7A1A", advice: "Gevoelige mensen beperken zware inspanning buiten beter." },
