@@ -122,7 +122,8 @@ export function StationHeading({
         <h2 className="text-[1.75rem] leading-tight font-semibold tracking-tight wrap-anywhere">
           {stationTitle(station)}
         </h2>
-        <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="Sluiten" className="-mr-1.5">
+        {/* Below lg the panel's sticky "Terug naar de kaart" bar closes it. */}
+        <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="Sluiten" className="-mr-1.5 max-lg:hidden">
           <XIcon />
         </Button>
       </div>

@@ -77,11 +77,12 @@ export function AppSwitcher() {
           aria-label="Apps"
           className="border-border bg-background absolute right-0 z-50 mt-2 w-max rounded-xl border p-4 shadow-xl"
         >
-          {/* flex, not grid-cols-3: Tailwind's grid-cols-3 is
-              repeat(3, minmax(0,1fr)), and in a shrink-to-fit absolutely
+          {/* Fixed tracks, not grid-cols-2: Tailwind's grid-cols-2 is
+              repeat(2, minmax(0,1fr)), and in a shrink-to-fit absolutely
               positioned box those columns collapse to zero width, which
-              piles the tiles on top of each other. */}
-          <div className="flex gap-2">
+              piles the tiles on top of each other. 2×2 on phones, where one
+              row of four (about 440px) runs off the screen; one row from sm. */}
+          <div className="grid grid-cols-[repeat(2,6rem)] gap-2 sm:flex">
             {apps.map((app) => (
               <a
                 key={app.name}
