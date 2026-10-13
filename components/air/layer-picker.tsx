@@ -51,8 +51,7 @@ export function LayerPicker<Id extends string>({
           <LayersIcon />
           <span className="truncate font-semibold sm:hidden">{shortName}</span>
           <span className="hidden truncate font-semibold sm:inline">{name}</span>
-          {/* At the far end when the button is stretched to fill a row. */}
-          <ChevronDownIcon className="text-muted-foreground ml-auto" />
+          <ChevronDownIcon className="text-muted-foreground" />
         </PopoverTrigger>
         <PopoverContent align="start" className="max-h-(--available-height) w-[min(18rem,calc(100vw-2rem))] gap-2 overflow-y-auto p-2">
           <RadioGroup
