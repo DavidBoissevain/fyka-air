@@ -166,7 +166,7 @@ export function DataInfo({ stations, className }: { stations: StationReading[]; 
           <div className="flex items-center gap-3">
             <AirMark tile="size-9 shrink-0" />
             <p className="text-muted-foreground text-xs">
-              <strong className="text-foreground font-semibold">Fyka Air</strong> is gratis en open source. Kijk mee
+              <strong className="text-foreground font-semibold">Luchtmeter</strong> is gratis en open source. Kijk mee
               in de code of steun de maker.
             </p>
           </div>

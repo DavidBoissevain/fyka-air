@@ -53,7 +53,7 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* Fyka base tokens and Fyka Air's sky accent: docs/design/huisstijl.html. */
+/* Fyka base tokens and Luchtmeter's sky accent: docs/design/huisstijl.html. */
 :root {
   --background: #EEF1F5;
   --foreground: #1A1D24;

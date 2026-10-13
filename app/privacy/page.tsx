@@ -7,14 +7,14 @@ import { SiteHeader } from "@/components/site-header";
 import { CONTACT_EMAIL } from "@/lib/links";
 
 export const metadata: Metadata = {
-  title: "Privacy · Fyka Air",
-  description: "Wat Fyka Air over je bijhoudt (bijna niets), en welke diensten je browser gebruikt.",
+  title: "Privacy · Luchtmeter",
+  description: "Wat Luchtmeter over je bijhoudt (bijna niets), en welke diensten je browser gebruikt.",
   alternates: { canonical: "/privacy" },
 };
 
 const linkClass = "text-brand-text underline underline-offset-3 hover:no-underline";
 
-// Where a visitor's browser loads things from, besides Fyka Air itself.
+// Where a visitor's browser loads things from, besides Luchtmeter itself.
 const SERVICES = [
   { name: "Vercel", what: "Host van de site. Bewaart je IP-adres kort in zijn logboeken, om de site draaiend en veilig te houden. Vercel is een Amerikaans bedrijf." },
   { name: "OpenFreeMap", what: "De achtergrondkaart: wegen, water en plaatsnamen." },
@@ -22,7 +22,7 @@ const SERVICES = [
   { name: "unpkg", what: "Een stukje code dat de kaart nodig heeft om te tekenen." },
 ];
 
-/** The privacy page (decision #48): what Fyka Air keeps, and which services the browser talks to. */
+/** The privacy page (decision #48): what Luchtmeter keeps, and which services the browser talks to. */
 export default function Privacy() {
   return (
     <div className="relative flex min-h-dvh flex-col">
@@ -38,13 +38,13 @@ export default function Privacy() {
             <h1 className="text-3xl font-bold tracking-tight">Privacy</h1>
           </div>
           <p className="text-lg">
-            Kort gezegd: Fyka Air vraagt niets van je. Geen account, geen cookies, en ik weet niet wie je bent.
+            Kort gezegd: Luchtmeter vraagt niets van je. Geen account, geen cookies, en ik weet niet wie je bent.
           </p>
           <p className="text-muted-foreground text-sm">Bijgewerkt in oktober 2026.</p>
         </div>
 
         <section className="grid gap-3">
-          <h2 className="text-xl font-semibold">Wat Fyka Air bijhoudt</h2>
+          <h2 className="text-xl font-semibold">Wat Luchtmeter bijhoudt</h2>
           <p className="text-muted-foreground">
             Bezoeken tel ik met{" "}
             <a href="https://watch.fyka.me/privacy" target="_blank" rel="noopener noreferrer" className={linkClass}>
@@ -73,7 +73,7 @@ export default function Privacy() {
           <h2 className="text-xl font-semibold">Je locatie</h2>
           <p className="text-muted-foreground">
             Gebruik je de knop voor je locatie, dan vraagt je browser eerst om toestemming. Je locatie blijft in je
-            browser: de kaart zoomt er alleen naartoe. Fyka Air bewaart of verstuurt hem niet. Wel laadt de kaart
+            browser: de kaart zoomt er alleen naartoe. Luchtmeter bewaart of verstuurt hem niet. Wel laadt de kaart
             daarna de kaartstukjes van die buurt, net als wanneer je er zelf naartoe schuift.
           </p>
         </section>
@@ -86,15 +86,15 @@ export default function Privacy() {
           </p>
           {/* The rounding is POINT_DECIMALS in lib/air-quality.ts (decision #46). */}
           <p className="text-muted-foreground">
-            Klik je op de kaart, dan vraagt Fyka Air bij het RIVM de berekende waarde op die plek op, afgerond op
-            ongeveer 100 meter (in de jaarkaart 10 meter). Het RIVM ziet dan Fyka Air, niet jou.
+            Klik je op de kaart, dan vraagt Luchtmeter bij het RIVM de berekende waarde op die plek op, afgerond op
+            ongeveer 100 meter (in de jaarkaart 10 meter). Het RIVM ziet dan Luchtmeter, niet jou.
           </p>
         </section>
 
         <section className="grid gap-3">
           <h2 className="text-xl font-semibold">Diensten die je browser gebruikt</h2>
           <p className="text-muted-foreground">
-            Net als bij elke website ziet een dienst je IP-adres als je browser er iets van laadt. Fyka Air gebruikt:
+            Net als bij elke website ziet een dienst je IP-adres als je browser er iets van laadt. Luchtmeter gebruikt:
           </p>
           <ul className="grid gap-2">
             {SERVICES.map((s) => (
@@ -121,7 +121,7 @@ export default function Privacy() {
         <section className="grid gap-3">
           <h2 className="text-xl font-semibold">Over de cijfers</h2>
           <p className="text-muted-foreground">
-            Fyka Air is een hobbyproject van één persoon. De metingen van de laatste uren zijn voorlopig: Luchtmeetnet
+            Luchtmeter is een hobbyproject van één persoon. De metingen van de laatste uren zijn voorlopig: Luchtmeetnet
             en het RIVM controleren ze later nog. Het gekleurde gebied is een berekening van het RIVM, geen meting. Zie
             de kaart als een goede indicatie, niet als medisch advies. Officiële waarden staan op{" "}
             <a href="https://www.luchtmeetnet.nl" target="_blank" rel="noopener noreferrer" className={linkClass}>
@@ -134,7 +134,7 @@ export default function Privacy() {
         <section className="grid gap-3">
           <h2 className="text-xl font-semibold">Vragen en je rechten</h2>
           <p className="text-muted-foreground">
-            Fyka Air is gemaakt door David Boissevain. De site bewaart niets waarmee je te herkennen bent, dus er is
+            Luchtmeter is gemaakt door David Boissevain. De site bewaart niets waarmee je te herkennen bent, dus er is
             weinig om in te zien of te wissen. Heb je een vraag, mail dan naar{" "}
             <a href={`mailto:${CONTACT_EMAIL}`} className={linkClass}>
               {CONTACT_EMAIL}

@@ -5,7 +5,7 @@ import { MAP_LAYERS, type MapLayer } from "@/lib/air-quality";
 // The viewer's map layer choice, remembered in localStorage. The server and
 // hydration render the default; storage may be blocked, so the choice also
 // lives in memory for this page.
-const KEY = "fyka-air:map-layer";
+const KEY = "luchtmeter:map-layer";
 const DEFAULT: MapLayer = "lki";
 let chosen: MapLayer | null = null;
 const listeners = new Set<() => void>();

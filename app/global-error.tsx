@@ -27,7 +27,7 @@ export default function GlobalError({ error, retry }: { error: Error & { digest?
   return (
     <html lang="nl" className={`${figtree.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="bg-background text-foreground min-h-full font-sans">
-        <title>Er ging iets mis · Fyka Air</title>
+        <title>Er ging iets mis · Luchtmeter</title>
         <StatusPage
           variant="error"
           title="Er ging iets mis"
@@ -51,7 +51,7 @@ export default function GlobalError({ error, retry }: { error: Error & { digest?
             )
           }
         >
-          Fyka Air kon niet laden. Probeer het opnieuw. Lukt het dan nog niet, kom over een paar minuten terug.
+          Luchtmeter kon niet laden. Probeer het opnieuw. Lukt het dan nog niet, kom over een paar minuten terug.
         </StatusPage>
       </body>
     </html>

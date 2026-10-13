@@ -6,7 +6,7 @@ import type { MapPeriod } from "@/lib/air-quality";
 // opens the annual view; otherwise the viewer's last choice from localStorage.
 // The server and hydration render "nu"; storage may be blocked, so the choice
 // also lives in memory for this page.
-const KEY = "fyka-air:map-period";
+const KEY = "luchtmeter:map-period";
 const PARAM = "periode";
 const DEFAULT: MapPeriod = "nu";
 let chosen: MapPeriod | null = null;

@@ -7,7 +7,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
-  title: "Pagina niet gevonden · Fyka Air",
+  title: "Pagina niet gevonden · Luchtmeter",
 };
 
 export default function NotFound() {

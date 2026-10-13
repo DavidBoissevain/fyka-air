@@ -1,5 +1,5 @@
 /**
- * The Fyka Air app mark ("Stroom"): two air currents and a particle.
+ * The Luchtmeter app mark ("Stroom"): two air currents and a particle.
  *
  * Follows the shared Fyka recipe from fyka-website's app-marks.tsx: a rounded
  * tile (25 %) with a one-hue gradient (sky-600 → sky-700), and a white line

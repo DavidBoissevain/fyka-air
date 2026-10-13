@@ -11,14 +11,14 @@ const DESCRIPTION =
 // app/opengraph-image.tsx.
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: "Fyka Air",
+  title: "Luchtmeter",
   description: DESCRIPTION,
-  applicationName: "Fyka Air",
+  applicationName: "Luchtmeter",
   openGraph: {
     type: "website",
-    siteName: "Fyka Air",
+    siteName: "Luchtmeter",
     locale: "nl_NL",
-    title: "Fyka Air",
+    title: "Luchtmeter",
     description: DESCRIPTION,
   },
   twitter: { card: "summary_large_image" },

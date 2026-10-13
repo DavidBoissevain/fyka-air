@@ -6,7 +6,7 @@ Decisions, data-source quirks, the schema and what to do next are in [TECHNICAL.
 
 # UI reference: the huisstijl
 
-Before building or changing any UI, follow the Fyka Air huisstijl in [docs/design/huisstijl.html](docs/design/huisstijl.html). Open it in a browser to see the map, station panel, colours, type and components in light and dark mode. The rules below are the summary; the page is the visual reference. The page's readings and the citizen sensors on its map are example data.
+Before building or changing any UI, follow the Luchtmeter huisstijl in [docs/design/huisstijl.html](docs/design/huisstijl.html). Open it in a browser to see the map, station panel, colours, type and components in light and dark mode. The rules below are the summary; the page is the visual reference. The page's readings and the citizen sensors on its map are example data.
 
 ## Colour
 
@@ -22,7 +22,7 @@ Before building or changing any UI, follow the Fyka Air huisstijl in [docs/desig
   | text | `#1A1D24` | `#F1F5F9` |
 
   The dark mode is Tailwind's slate (navy), not neutral grey. The steel scale (`#5B7BAA` = steel-500) is for borders, secondary UI and charts that don't show air quality.
-- **Accent (Fyka Air's own colour):** sky. Primary buttons use a `sky-600 → sky-700` gradient (`#0284C7 → #0369A1`) with white text. Accent text and links are `sky-700` in light mode and `sky-400` in dark mode. Never use the accent on the map, so it can't be confused with LKI blue.
+- **Accent (Luchtmeter's own colour):** sky. Primary buttons use a `sky-600 → sky-700` gradient (`#0284C7 → #0369A1`) with white text. Accent text and links are `sky-700` in light mode and `sky-400` in dark mode. Never use the accent on the map, so it can't be confused with LKI blue.
 - **Air quality:** use only the LKI scale (RIVM Luchtkwaliteitsindex, 1–11), with these categories: Goed 1–3, Matig 4–6, Onvoldoende 7–8, Slecht 9–10, Zeer slecht 11. Always show the category name next to the colour, never the colour alone. The LKI colours are `LKI_COLORS` in `lib/air-quality.ts` (the same as the reference page): our own 11-step scale from deep blue to purple, close in look to RIVM Samen Meten's map. They deliberately don't copy Luchtmeetnet's 5-colour legend (decision #23 in TECHNICAL.md). Pale colours get a thin dark outline (`LKI_OUTLINE`) so they stay visible on a light map. No index: `#70757F`.
 - **One exception, the annual view ("Jaargemiddelde"):** annual averages use RIVM's own WHO scale (`ANNUAL_LAYERS` in `lib/air-quality.ts`): blue under the WHO guideline, pale yellow to dark red above it, the same as Atlas Leefomgeving. The legend marks the WHO guideline and the EU limit for 2030. Name each colour by one of three categories: Onder het WHO-advies, Boven het WHO-advies, Boven de EU-norm 2030. Never use the LKI scale for annual averages, or this scale for hourly values (decision #38).
 
@@ -51,4 +51,4 @@ Before building or changing any UI, follow the Fyka Air huisstijl in [docs/desig
 - Area layer: RIVM's calculated map (decision #26 in TECHNICAL.md) sits under roads, labels and the dots, in our LKI colours only. Always label it as RIVM's calculation ("berekend door het RIVM", an estimate, not a measurement) and credit luchtmeetnet.nl. With a pollutant layer chosen, the dots use the same pollutant and bands (#27).
 - Two modes, "Nu" and "Jaargemiddelde" (decision #36): the switch always shows the active mode, and the layer button names the year in the annual view. The annual view shows RIVM's annual map for PM2,5 and NO₂ only, labelled as RIVM's calculation, and nothing that's about this hour (no freshness, no hourly dots). Official stations show as dots with their measured annual average for the map's year; stations without one are left out (decisions #42, #43).
 - Layer choice: always show which layer is active, and list layers by importance for health (LKI, PM2,5, NO₂, O₃, PM10; decision #28). Health explanations stay in plain Dutch, stick to well-established links and say they are not medical advice.
-- Logo: the Fyka three-wave mark, plus the Fyka Air app mark "Stroom" (sky tile, 25% rounding, white glyph of two air currents and a particle at 60%), following the app mark recipe in fyka-website's `app-marks.tsx`. Use `AirMark` from `components/air-mark.tsx`. The same glyph is in `app/icon.svg` (favicon) and `app/apple-icon.tsx`; change all three together.
+- Logo: the Fyka three-wave mark, plus the Luchtmeter app mark "Stroom" (sky tile, 25% rounding, white glyph of two air currents and a particle at 60%), following the app mark recipe in fyka-website's `app-marks.tsx`. Use `AirMark` from `components/air-mark.tsx`. The same glyph is in `app/icon.svg` (favicon) and `app/apple-icon.tsx`; change all three together.

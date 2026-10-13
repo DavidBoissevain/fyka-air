@@ -16,7 +16,7 @@ import {
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
-  title: "Hoe werkt de index? · Fyka Air",
+  title: "Hoe werkt de index? · Luchtmeter",
   description: "Hoe de Luchtkwaliteitsindex werkt, en wat je op de kaart ziet.",
   alternates: { canonical: "/over-de-index" },
 };

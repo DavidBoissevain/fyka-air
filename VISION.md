@@ -1,8 +1,8 @@
 # Vision
 
-**fyka-air** is an open source, Dutch-sovereign app for monitoring air quality in the Netherlands.
+**Luchtmeter** is an open source, Dutch-sovereign app for monitoring air quality in the Netherlands.
 
-The Netherlands already has rich, open air quality data: official RIVM measuring stations plus thousands of citizen sensors, collected through [Samen Meten](https://samenmeten.rivm.nl/dataportaal/). The tools for exploring that data are functional but dated. fyka-air puts the same data in a modern, beautiful interface that anyone can use and check.
+The Netherlands already has rich, open air quality data: official RIVM measuring stations plus thousands of citizen sensors, collected through [Samen Meten](https://samenmeten.rivm.nl/dataportaal/). The tools for exploring that data are functional but dated. Luchtmeter puts the same data in a modern, beautiful interface that anyone can use and check.
 
 ## Principles
 

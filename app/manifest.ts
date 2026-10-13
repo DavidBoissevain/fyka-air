@@ -3,8 +3,8 @@ import type { MetadataRoute } from "next";
 // "Zet op beginscherm": opens the map full screen, with the Stroom mark.
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Fyka Air",
-    short_name: "Fyka Air",
+    name: "Luchtmeter",
+    short_name: "Luchtmeter",
     description: "Elk uur de luchtkwaliteit in Nederland op de kaart.",
     lang: "nl",
     start_url: "/",

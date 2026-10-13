@@ -2,9 +2,9 @@
 <html lang="nl">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<!-- Fyka Air huisstijl reference. Published version: https://claude.ai/artifact/3b3pkQXFjQKFQZY2AP5qgz
+<!-- Luchtmeter huisstijl reference. Published version: https://claude.ai/artifact/3b3pkQXFjQKFQZY2AP5qgz
      Open this file in a browser. Readings are example data; station locations come from Luchtmeetnet. -->
-<title>Fyka Air Huisstijl</title>
+<title>Luchtmeter Huisstijl</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500&amp;display=swap">
@@ -12,7 +12,7 @@
 <style>
 /* Layout: brand bar, then the live map with its station panel as the opener,
    then the guide sections stacked in one 1200px column. Fyka base tokens come
-   from fyka-website; the sky accent is Fyka Air's own app colour. */
+   from fyka-website; the sky accent is Luchtmeter's own app colour. */
 :root {
   --bg: #EEF1F5;
   --surface: #F8FAFC;
@@ -501,7 +501,7 @@ footer { font-size: var(--t-xs); color: var(--muted); display: grid; gap: 4px; m
   <header class="bar">
     <div class="brand">
       <svg class="mark" aria-hidden="true"><use href="#fyka-mark"></use></svg>
-      <span>Fyka Air <small>Huisstijl</small></span>
+      <span>Luchtmeter <small>Huisstijl</small></span>
     </div>
     <div class="theme-toggle" role="group" aria-label="Kleurthema">
       <button type="button" id="theme-light" aria-pressed="true">
@@ -517,8 +517,8 @@ footer { font-size: var(--t-xs); color: var(--muted); display: grid; gap: 4px; m
 
   <div class="intro">
     <span class="eyebrow">Fyka family · version 0.1</span>
-    <h1>How Fyka Air looks, reads and shows air quality</h1>
-    <p>Fyka Air uses the same base as the other Fyka apps: steel neutrals, navy dark mode and the three-wave mark. On top of that it has its own sky accent, the LKI colour scale for data, and rules that show where each value comes from and how old it is.</p>
+    <h1>How Luchtmeter looks, reads and shows air quality</h1>
+    <p>Luchtmeter uses the same base as the other Fyka apps: steel neutrals, navy dark mode and the three-wave mark. On top of that it has its own sky accent, the LKI colour scale for data, and rules that show where each value comes from and how old it is.</p>
   </div>
 
   <div class="atlas">
@@ -561,13 +561,13 @@ footer { font-size: var(--t-xs); color: var(--muted); display: grid; gap: 4px; m
   <section class="guide" id="logo">
     <div class="guide-head">
       <span class="eyebrow">Logo</span>
-      <h2>The Fyka mark with a sky tile for Air</h2>
-      <p>Fyka Air follows the app mark recipe from fyka-website: a tile with 25% rounding, a one-hue gradient and a white line icon at 60% of the tile. The Air glyph is Stroom: two air currents and a particle, drawn on the 24-unit grid. In code it is <code>AirMark</code> in components/air-mark.tsx, and app/icon.svg is the favicon.</p>
+      <h2>The Fyka mark with a sky tile for Luchtmeter</h2>
+      <p>Luchtmeter follows the app mark recipe from fyka-website: a tile with 25% rounding, a one-hue gradient and a white line icon at 60% of the tile. The Air glyph is Stroom: two air currents and a particle, drawn on the 24-unit grid. In code it is <code>AirMark</code> in components/air-mark.tsx, and app/icon.svg is the favicon.</p>
     </div>
     <div class="sheet">
       <div class="logo-stage">
         <div class="on-light">
-          <div class="lockup"><svg aria-hidden="true"><use href="#fyka-mark"></use></svg>Fyka Air</div>
+          <div class="lockup"><svg aria-hidden="true"><use href="#fyka-mark"></use></svg>Luchtmeter</div>
           <div class="sizes">
             <figure><div class="air-mark" style="width:64px;height:64px"><svg aria-hidden="true"><use href="#wind"></use></svg></div>64</figure>
             <figure><div class="air-mark" style="width:40px;height:40px"><svg aria-hidden="true"><use href="#wind"></use></svg></div>40</figure>
@@ -575,7 +575,7 @@ footer { font-size: var(--t-xs); color: var(--muted); display: grid; gap: 4px; m
           </div>
         </div>
         <div class="on-dark">
-          <div class="lockup"><svg aria-hidden="true"><use href="#fyka-mark"></use></svg>Fyka Air</div>
+          <div class="lockup"><svg aria-hidden="true"><use href="#fyka-mark"></use></svg>Luchtmeter</div>
           <div class="sizes">
             <figure><div class="air-mark" style="width:64px;height:64px"><svg aria-hidden="true"><use href="#wind"></use></svg></div>64</figure>
             <figure><div class="air-mark" style="width:40px;height:40px"><svg aria-hidden="true"><use href="#wind"></use></svg></div>40</figure>
@@ -597,7 +597,7 @@ footer { font-size: var(--t-xs); color: var(--muted); display: grid; gap: 4px; m
         <div style="display:grid;gap:12px">
           <h3>Rules</h3>
           <ul class="rules">
-            <li>Write the name as Fyka Air, with a capital F and A.</li>
+            <li>Write the name as Luchtmeter: one word, with a capital L.</li>
             <li>Keep the app mark at 24 px or larger. Below that, use the Fyka mark.</li>
             <li class="no">Don't recolour the three waves; they belong to the whole family.</li>
             <li class="no">Don't put the mark on the map or on an LKI colour.</li>
@@ -622,7 +622,7 @@ footer { font-size: var(--t-xs); color: var(--muted); display: grid; gap: 4px; m
       <div class="ramp" id="steel-ramp"></div>
     </div>
     <div class="sheet">
-      <div style="display:grid;gap:6px"><h3>Sky accent</h3><p class="lead">Fyka Air's own colour, for buttons, selected tabs, links and focus. It stays off the map, so nobody mixes it up with the blue of LKI 1 to 3.</p></div>
+      <div style="display:grid;gap:6px"><h3>Sky accent</h3><p class="lead">Luchtmeter's own colour, for buttons, selected tabs, links and focus. It stays off the map, so nobody mixes it up with the blue of LKI 1 to 3.</p></div>
       <div class="swatches" id="sky-swatches"></div>
     </div>
     <div class="sheet">
@@ -755,7 +755,7 @@ footer { font-size: var(--t-xs); color: var(--muted); display: grid; gap: 4px; m
     <div class="guide-head">
       <span class="eyebrow">Map</span>
       <h2>A quiet basemap in both themes</h2>
-      <p>The app uses MapLibre GL with the PDOK BRT-Achtergrondkaart. PDOK has no dark style, so Fyka Air ships its own dark variant with these colours. The map on this page draws CBS province borders from PDOK as a stand-in for the full basemap.</p>
+      <p>The app uses MapLibre GL with the PDOK BRT-Achtergrondkaart. PDOK has no dark style, so Luchtmeter ships its own dark variant with these colours. The map on this page draws CBS province borders from PDOK as a stand-in for the full basemap.</p>
     </div>
     <div class="map-tokens" id="map-tokens"></div>
   </section>
@@ -1064,9 +1064,9 @@ footer { font-size: var(--t-xs); color: var(--muted); display: grid; gap: 4px; m
   }
   function setTheme(t) {
     root.setAttribute("data-theme", t);
-    try { localStorage.setItem("fyka-air-theme", t); } catch (e) {}
+    try { localStorage.setItem("luchtmeter-theme", t); } catch (e) {}
   }
-  try { var saved = localStorage.getItem("fyka-air-theme"); if (saved === "dark" || saved === "light") root.setAttribute("data-theme", saved); } catch (e) {}
+  try { var saved = localStorage.getItem("luchtmeter-theme"); if (saved === "dark" || saved === "light") root.setAttribute("data-theme", saved); } catch (e) {}
   document.getElementById("theme-light").addEventListener("click", function () { setTheme("light"); });
   document.getElementById("theme-dark").addEventListener("click", function () { setTheme("dark"); });
   new MutationObserver(syncToggle).observe(root, { attributes: true, attributeFilter: ["data-theme"] });

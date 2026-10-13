@@ -15,7 +15,7 @@ type App = {
 };
 
 const apps: App[] = [
-  { name: "Fyka Air", href: "/", external: false, tile: <AirMark /> },
+  { name: "Luchtmeter", href: "/", external: false, tile: <AirMark /> },
   { name: "Fyka Notes", href: NOTES_URL, external: true, tile: <NotesMark /> },
   { name: "Fyka Retro", href: RETRO_URL, external: true, tile: <RetroMark /> },
   { name: "Fyka Votes", href: VOTES_URL, external: true, tile: <VotesMark /> },
@@ -74,7 +74,7 @@ export function AppSwitcher() {
       {open && (
         <div
           role="menu"
-          aria-label="Fyka-apps"
+          aria-label="Apps"
           className="border-border bg-background absolute right-0 z-50 mt-2 w-max rounded-xl border p-4 shadow-xl"
         >
           {/* flex, not grid-cols-3: Tailwind's grid-cols-3 is
