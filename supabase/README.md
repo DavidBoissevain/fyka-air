@@ -58,7 +58,7 @@ To backfill a specific hour, send `{"mode": "sweep", "hour": "2026-10-05T18:00:0
    ```
 
    - For a hosted project, create a dedicated secret key for this under **Project Settings → API Keys**. That way it can be rotated without touching anything else.
-     - The production project (`uoocwxpfujiwfrhkkskb`, "Air", eu-west-1) currently uses the `default` secret key.
+     - The production project (`uoocwxpfujiwfrhkkskb`, "Luchtmeter", eu-west-1) currently uses the `default` secret key.
      - To switch to a dedicated key, create it, then run `select vault.update_secret((select id from vault.secrets where name = 'collector_secret_key'), '<new key>');`.
    - For the local stack, use `http://host.docker.internal:54321` as the URL and the secret key that `npx supabase status` prints.
 
