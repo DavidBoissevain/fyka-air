@@ -156,11 +156,6 @@ export function DataInfo({ stations, className }: { stations: StationReading[]; 
           </section>
         </div>
 
-        <p className="text-muted-foreground text-xs">
-          Elk uur komen er nieuwe metingen bij. Een meetstation verdwijnt van de kaart als de laatste meting meer
-          dan 3 uur oud is, een burgersensor na 5 uur.
-        </p>
-
         {/* The header has no logo or project links, so the dialog carries them. */}
         <DialogFooter className="-mx-5 -mb-5 grid gap-3 p-5">
           <div className="flex items-center gap-3">
