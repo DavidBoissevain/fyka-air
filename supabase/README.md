@@ -10,7 +10,9 @@ This folder holds the database schema ([migrations/](migrations/)) and the Edge 
 2. Upserts them through `public.ingest_measurements`.
 3. Refreshes details (name, location, components) for up to 20 stations whose details are missing or more than a day old.
 
-It only accepts calls made with a **secret** API key.
+It only accepts calls made with the secret API key named `collectors` (decision #53 in TECHNICAL.md).
+
+To backfill after an outage, send `{"hours": 24}` to fetch the last 24 hours instead of 3 (at most 48).
 
 You can test the API client without Supabase:
 
@@ -57,9 +59,10 @@ To backfill a specific hour, send `{"mode": "sweep", "hour": "2026-10-05T18:00:0
    select vault.create_secret('<secret API key, sb_secret_...>', 'collector_secret_key');
    ```
 
-   - For a hosted project, create a dedicated secret key for this under **Project Settings → API Keys**. That way it can be rotated without touching anything else.
-     - The production project (`uoocwxpfujiwfrhkkskb`, "Luchtmeter", eu-west-1) currently uses the `default` secret key.
-     - To switch to a dedicated key, create it, then run `select vault.update_secret((select id from vault.secrets where name = 'collector_secret_key'), '<new key>');`.
+   - For a hosted project, create a dedicated secret key named `collectors` under **Project Settings → API Keys**. That way it can be rotated without touching anything else. The functions accept only that key (`auth: "secret:collectors"`); a key with another name gets a 401.
+     - The production project (`uoocwxpfujiwfrhkkskb`, "Luchtmeter", eu-west-1) uses it since 2026-10-13.
+     - To store a new key, run `select vault.update_secret((select id from vault.secrets where name = 'collector_secret_key'), '<new key>');`.
+   - If the local stack has no `collectors` key, set `auth: "secret:*"` while testing.
    - For the local stack, use `http://host.docker.internal:54321` as the URL and the secret key that `npx supabase status` prints.
 
 4. Check that it runs. To trigger it by hand:

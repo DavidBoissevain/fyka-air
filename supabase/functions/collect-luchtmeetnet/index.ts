@@ -6,6 +6,8 @@ import { fetchMeasurements, fetchStationDetails, sleep } from "./luchtmeetnet.ts
 
 // Re-fetch the last few hours each run so missed runs and late data catch up.
 const CATCH_UP_HOURS = 3;
+// A backfill ({"hours": n}) is capped so it stays within the fair-use limit.
+const MAX_BACKFILL_HOURS = 48;
 // Station details cost one request each against the 100-per-5-minutes limit,
 // so refresh a few per run, oldest first.
 const DETAILS_PER_RUN = 20;
@@ -13,12 +15,15 @@ const DETAILS_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 const DETAILS_SPACING_MS = 1000;
 
 export default {
-  fetch: withSupabase({ auth: "secret" }, async (_req, ctx) => {
+  // Only the dedicated "collectors" secret key; plain "secret" accepts only "default".
+  fetch: withSupabase({ auth: "secret:collectors" }, async (req, ctx) => {
     const db = ctx.supabaseAdmin;
     try {
+      const body: { hours?: number } = await req.json().catch(() => ({}));
+      const hours = Math.min(Math.max(Math.floor(body.hours ?? CATCH_UP_HOURS), 1), MAX_BACKFILL_HOURS);
       const end = new Date();
       end.setUTCMinutes(0, 0, 0);
-      const start = new Date(end.getTime() - CATCH_UP_HOURS * 60 * 60 * 1000);
+      const start = new Date(end.getTime() - hours * 60 * 60 * 1000);
 
       const rows = await fetchMeasurements(start, end);
       const { data: upserted, error: ingestError } = await db.rpc("ingest_measurements", {

@@ -15,7 +15,8 @@ const DETAILS_MAX_AGE_DAYS = 7;
 type Body = { mode?: "sweep" | "things"; hoursAgo?: number; hour?: string };
 
 export default {
-  fetch: withSupabase({ auth: "secret" }, async (req, ctx) => {
+  // Only the dedicated "collectors" secret key; plain "secret" accepts only "default".
+  fetch: withSupabase({ auth: "secret:collectors" }, async (req, ctx) => {
     const db = ctx.supabaseAdmin;
     try {
       const body: Body = await req.json().catch(() => ({}));

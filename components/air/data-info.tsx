@@ -133,7 +133,8 @@ export function DataInfo({ stations, className }: { stations: StationReading[]; 
             <h3 className="font-semibold">Gekleurd gebied</h3>
             <p className="text-muted-foreground">
               Elk uur berekend door het RIVM uit de metingen van de officiële meetstations, plus een model voor
-              snelwegen. Het is een schatting, geen meting. Klik naast de stippen voor de waarde op die plek. Bron:{" "}
+              snelwegen. Het is een schatting, geen meting. Wil je de waarde op een plek zien? Zet dat aan in de
+              instellingen en klik naast de stippen. Bron:{" "}
               <a href="https://www.luchtmeetnet.nl" target="_blank" rel="noopener noreferrer" className={linkClass}>
                 luchtmeetnet.nl
               </a>

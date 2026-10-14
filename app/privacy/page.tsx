@@ -63,8 +63,8 @@ export default function Privacy() {
         <section className="grid gap-3">
           <h2 className="text-xl font-semibold">In je eigen browser</h2>
           <p className="text-muted-foreground">
-            Je browser onthoudt welke kaart je koos (Nu of Jaargemiddelde, en de kaartlaag) en of je de site licht of
-            donker wilt. Zo opent de kaart de volgende keer hetzelfde. Dat blijft op je eigen apparaat en gaat nergens
+            Je browser onthoudt welke kaart je koos (Nu of Jaargemiddelde, en de kaartlaag), je instellingen en of je
+            de site licht of donker wilt. Zo opent de kaart de volgende keer hetzelfde. Dat blijft op je eigen apparaat en gaat nergens
             heen. Wis je je browsergegevens, dan is het weg.
           </p>
         </section>
@@ -86,7 +86,8 @@ export default function Privacy() {
           </p>
           {/* The rounding is POINT_DECIMALS in lib/air-quality.ts (decision #46). */}
           <p className="text-muted-foreground">
-            Klik je op de kaart, dan vraagt Luchtmeter bij het RIVM de berekende waarde op die plek op, afgerond op
+            Zet je in de instellingen aan dat je de waarde ziet waar je klikt, en klik je op de kaart, dan vraagt
+            Luchtmeter bij het RIVM de berekende waarde op die plek op, afgerond op
             ongeveer 100 meter (in de jaarkaart 10 meter). Het RIVM ziet dan Luchtmeter, niet jou.
           </p>
         </section>

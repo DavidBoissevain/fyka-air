@@ -11,6 +11,7 @@ import { DataInfo } from "@/components/air/data-info";
 import { LayerPicker } from "@/components/air/layer-picker";
 import { MapSearch } from "@/components/air/map-search";
 import { PeriodSwitch } from "@/components/air/period-switch";
+import { SettingsDialog } from "@/components/air/settings-dialog";
 import { AnnualPointValue, PointValue } from "@/components/air/point-value";
 import { AnnualRivmLayer, RivmLayer } from "@/components/air/rivm-layer";
 import { StationLayer, lkiPaint, onHourlyMap, type Paint } from "@/components/air/station-layer";
@@ -32,6 +33,7 @@ import {
   type MapLayer,
   type StationReading,
 } from "@/lib/air-quality";
+import { useClickValue } from "@/hooks/use-click-value";
 import { setMapLayer, useMapLayer } from "@/hooks/use-map-layer";
 import { setMapPeriod, useMapPeriod } from "@/hooks/use-map-period";
 import type { Place } from "@/lib/geocode";
@@ -83,6 +85,34 @@ function LegendCard({
       {/* On phones the key wraps within the width of the scale (w-0 min-w-full)
           instead of stretching the card across the screen. */}
       <div className={cn("w-0 min-w-full gap-2 sm:w-auto sm:min-w-0", open ? "grid" : "hidden sm:grid")}>{details}</div>
+    </div>
+  );
+}
+
+// The map credits. On phones one short line that opens to the full credits
+// with a tap; the OpenStreetMap credit stays visible either way. From sm up
+// the full credits always show.
+function MapCredits({ annual, className }: { annual: boolean; className?: string }) {
+  const [open, setOpen] = useState(false);
+  const full = `OpenFreeMap · © OpenMapTiles · © OpenStreetMap · ${
+    annual
+      ? `Kaart: RIVM, jaargemiddelde ${ANNUAL_YEAR}`
+      : "Metingen: Luchtmeetnet, RIVM Samen Meten · Kaart: RIVM, luchtmeetnet.nl"
+  }`;
+  return (
+    <div className={cn("text-muted-foreground bg-card/80 pointer-events-auto rounded px-1.5 text-[0.6875rem]", className)}>
+      <span className="hidden sm:inline">{full}</span>
+      {/* The after: element widens the tap target beyond the small text. */}
+      <button
+        type="button"
+        className="relative text-right after:absolute after:-inset-2 sm:hidden"
+        aria-expanded={open}
+        onClick={() => setOpen(!open)}
+      >
+        {open ? full : `© OpenStreetMap · RIVM${annual ? ` ${ANNUAL_YEAR}` : ""}`}
+        <span className="sr-only">{open ? " (bronnen verbergen)" : " (alle bronnen tonen)"}</span>
+        <ChevronDown className={cn("ml-0.5 inline size-3 align-[-0.125em] transition-transform", open && "rotate-180")} />
+      </button>
     </div>
   );
 }
@@ -270,6 +300,11 @@ export function AirMap({ stations, annualStations, styles }: Props) {
   const annual = useMapPeriod() === "jaar";
   const annualLayer = annualLayerFor(mapLayer);
   const [probe, setProbe] = useState<{ longitude: number; latitude: number } | null>(null);
+  // A click next to the dots shows RIVM's value there, only with the setting on
+  // (decision #54); otherwise it just closes an open popup.
+  const clickValue = useClickValue();
+  const clickMap = (lngLat: { lng: number; lat: number }) =>
+    setProbe(clickValue ? { longitude: lngLat.lng, latitude: lngLat.lat } : null);
   // The selection is kept across modes; each mode looks it up in its own list.
   const selected = annual ? null : stations.find((s) => s.id === selectedId) ?? null;
   // The panel can show any annual station (it explains a missing value), the
@@ -336,8 +371,7 @@ export function AirMap({ stations, annualStations, styles }: Props) {
               paint={yearPaint}
               selectedId={selectedId}
               onSelect={selectStation}
-              // A click next to the dots shows RIVM's value there.
-              onMapClick={(lngLat) => setProbe({ longitude: lngLat.lng, latitude: lngLat.lat })}
+              onMapClick={clickMap}
             />
           ) : (
             <StationLayer
@@ -345,7 +379,7 @@ export function AirMap({ stations, annualStations, styles }: Props) {
               paint={nowPaint}
               selectedId={selectedId}
               onSelect={selectStation}
-              onMapClick={(lngLat) => setProbe({ longitude: lngLat.lng, latitude: lngLat.lat })}
+              onMapClick={clickMap}
             />
           )}
           {/* Just under the header row, right-aligned with its buttons (px-6). */}
@@ -414,21 +448,22 @@ export function AirMap({ stations, annualStations, styles }: Props) {
             <LayerPicker layers={MAP_LAYERS} value={mapLayer} onChange={setMapLayer} className="pointer-events-auto min-w-0" />
           )}
         </div>
-        {/* Legend bottom left, the data info button bottom right. On phones the
-            credits (two lines there) go in a column under them, so they never
-            cover the legend; from sm up the column dissolves and the credits
-            run along the bottom edge. */}
+        {/* Legend bottom left, the settings and data info buttons bottom right. On phones the
+            short credits go in a column under them, so they never cover the
+            legend; from sm up the column dissolves and the full credits run
+            along the bottom edge. */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex flex-col gap-1.5 pr-2 pb-1.5 pl-4 sm:contents">
           <div className="flex items-end justify-between gap-2 pr-1 sm:pointer-events-none sm:absolute sm:right-3 sm:bottom-4 sm:left-4 sm:z-10 sm:pr-0 lg:right-[calc(var(--panel)+0.75rem)]">
             {annual ? <AnnualLegend layer={annualLayer} /> : <Legend layer={mapLayer} />}
-            <DataInfo stations={stations} className="pointer-events-auto shrink-0 sm:mb-4" />
+            <div className="pointer-events-auto flex shrink-0 gap-2 sm:mb-4">
+              <SettingsDialog />
+              <DataInfo stations={stations} />
+            </div>
           </div>
-          <div className="text-muted-foreground bg-card/80 pointer-events-auto self-end rounded px-1.5 text-[0.6875rem] sm:absolute sm:right-2 sm:bottom-1.5 sm:z-10 lg:right-[calc(var(--panel)+0.5rem)]">
-            OpenFreeMap · © OpenMapTiles · © OpenStreetMap ·{" "}
-            {annual
-              ? `Kaart: RIVM, jaargemiddelde ${ANNUAL_YEAR}`
-              : "Metingen: Luchtmeetnet, RIVM Samen Meten · Kaart: RIVM, luchtmeetnet.nl"}
-          </div>
+          <MapCredits
+            annual={annual}
+            className="self-end sm:absolute sm:right-2 sm:bottom-1.5 sm:z-10 lg:right-[calc(var(--panel)+0.5rem)]"
+          />
         </div>
       </div>
       {panelOpen && (
